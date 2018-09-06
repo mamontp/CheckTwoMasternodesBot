@@ -283,7 +283,7 @@ def status(bot, update):
                                 paidAt = datetime.strptime(paidAt, '%Y-%m-%dT%H:%M:%S.%fZ')
                         sum_royalty = sum_royalty + r["amount"]
 
-                    string = "***" + coin + "*** " + masternode + " " + Status + "\namount - ***" + str(amount) + "***\nsum royalty - ***" \
+                    string = "***" + coin + "*** `" + masternode + "` " + Status + "\namount - ***" + str(amount) + "***\nsum royalty - ***" \
                              + str(sum_royalty) + "***\nlast paid - ***" + str(paidAt) + "***\n"
                     bot.sendMessage(chat_id=update.message.chat_id, text=string, parse_mode='MARKDOWN', reply_markup=main_markup)
     return MAIN_MENU
@@ -332,13 +332,18 @@ conversation = ConversationHandler(
     # state, depending on the state, the handler is called
     # The states are also transmitted by the already terminated handlers
     states={
-        MAIN_MENU    : [RegexHandler('^(' + main_menu_regexp + ')$', main_menu)],
-        ADD_COIN: [MessageHandler(Filters.text, add_coin)],
-        ADD_ADDRESS: [MessageHandler(Filters.text, add_addres)],
-        DELETE_ADDRESS: [MessageHandler(Filters.text, delete_address)]
+        MAIN_MENU:      [RegexHandler('^(' + main_menu_regexp + ')$', main_menu),
+                         CommandHandler('help', help)],
+        ADD_COIN:       [MessageHandler(Filters.text, add_coin),
+                         CommandHandler('help', help)],
+        ADD_ADDRESS:    [MessageHandler(Filters.text, add_addres),
+                         CommandHandler('help', help)],
+        DELETE_ADDRESS: [MessageHandler(Filters.text, delete_address),
+                         CommandHandler('help', help)]
     },
 
-    fallbacks=[RegexHandler('^done$', done)]
+    fallbacks=[RegexHandler('^done$', done),
+               CommandHandler('start', start)]
 )
 
 # add state handlers to the dialog
