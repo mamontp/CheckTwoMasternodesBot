@@ -37,7 +37,7 @@ reply_keyboard = [[button_status, button_balance, button_addres], [button_add, b
 main_markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
 
 # Create a keyboard of coins.
-coin_keyboard = [['vivo', 'gbx', 'pac', 'dev'], ['smart', 'bitg', 'pivx', 'xzc'], ['cancel']]
+coin_keyboard = [['vivo', 'gbx', 'pac', 'dev', 'anon'], ['smart', 'bitg', 'pivx', 'xzc'], ['cancel']]
 coin_markup = ReplyKeyboardMarkup(coin_keyboard, one_time_keyboard=True, resize_keyboard=True)
 
 # Create a keyboard of cancel.
@@ -118,7 +118,7 @@ def add(bot, update):
 
 # dialog for adding a coin
 def add_coin(bot, update):
-    available_coins = {'xzc', 'gbx', 'pac', 'dev', 'smart', 'bitg', 'vivo', 'pivx'}
+    available_coins = {'xzc', 'gbx', 'pac', 'dev', 'smart', 'bitg', 'vivo', 'pivx', 'anon'}
     global coin
     coin = update.message.text
     if coin == 'cancel':
@@ -158,7 +158,7 @@ def add_addres(bot, update):
 # function of getting a balance from the coin explorer
 def balance(coin, address):
     url = {'gbx': 'https://explorer.gobyte.network/ext/getbalance/',
-           'vivo': 'http://vivo.explorerz.top:3003/ext/getbalance/',
+           'vivo': 'https://chainz.cryptoid.info/vivo/api.dws?q=getbalance&a=',
            'pac': 'http://usa.pacblockexplorer.com:3002/ext/getbalance/',
            'bitg': 'https://explorer.savebitcoin.io/ext/getbalance/',
            'dev': 'http://explorer.deviantcoin.io/ext/getbalance/',
