@@ -57,7 +57,7 @@ def start(bot, update):
         'The bot is used for the 2masternodes.com service. The bot checks the status of the node at the wallet address from which the coins were sent to the node.\n'
         'If the bot does not respond, enter /start or "Clear Chat History" and then /start.\n'
         'To obtain statistics on the price of coins in the BTC and USD, a site is used - https://min-api.cryptocompare.com. '
-        'The cost of invested coins is taken at the time of the start of the node. '
+        'The cost of invested coins is taken at the time of the start of the node.\n'
         "/start - start bot\n"
         "help - help\n"
         "add - add address\n"
@@ -275,29 +275,30 @@ def get_coin_price(coin):
 
 # The function of finding the historical value of a coin.
 def historical_coin_price(coin, unixdate):
-    result = {}
-    for tsym in ('USD', 'BTC'):
-        keys = {'fsym': str(coin).upper(), 'tsym': tsym, 'toTs': unixdate, 'extraParams': 'CheckTwoMasternodesBot'}
-        url = 'https://min-api.cryptocompare.com/data/dayAvg' #?fsym=' + str(coin).upper() +'&tsym=USD&toTs=' + str(unixdate) + '&e=Bitfinex&extraParams=CheckTwoMasternodesBot'
-        try:
-            parsed_string = requests.get(url, params=keys)
-            if not ('error' in parsed_string.text) and not ('Error' in parsed_string.text):
-                result.update({tsym: float(parsed_string.json()[tsym])})
-            else:
-                logger.warning('Error "%s"', parsed_string.text + url)
-        except requests.exceptions.HTTPError:
-            logger.warning('Http Error on "%s"', url)
-            return ("Http Error on ")
-        except requests.exceptions.ConnectionError:
-            logger.warning('Error Connecting to  "%s"', url)
-            return ("Error Connecting to ")
-        except requests.exceptions.Timeout:
-            logger.warning('Timeout Error on "%s"', url)
-            return ("Timeout Error on explorer")
-        except requests.exceptions.RequestException:
-            logger.warning('OOps: Something Error "%s"', url)
-            return ("OOps: Something Error")
-    return result
+    COIN = str(coin).upper()
+    # https://min-api.cryptocompare.com/data/pricehistorical?fsym=PAC&tsyms=BTC,USD&ts=1531756522.0&extraParams=your_app_name
+    keys = {'fsym': COIN, 'tsyms': 'BTC,USD', 'ts': unixdate, 'extraParams': 'CheckTwoMasternodesBot'}
+    url = 'https://min-api.cryptocompare.com/data/pricehistorical'
+    try:
+        parsed_string = requests.get(url, params=keys)
+        if not ('error' in parsed_string.text) and not ('Error' in parsed_string.text):
+            BTC = float(parsed_string.json()[COIN]["BTC"])
+            USD = float(parsed_string.json()[COIN]["USD"])
+            return {"BTC": BTC, "USD": USD}
+        else:
+            logger.warning('Error "%s"', parsed_string.text + url)
+    except requests.exceptions.HTTPError:
+        logger.warning('Http Error on "%s"', url)
+        return ("Http Error on ")
+    except requests.exceptions.ConnectionError:
+        logger.warning('Error Connecting to  "%s"', url)
+        return ("Error Connecting to ")
+    except requests.exceptions.Timeout:
+        logger.warning('Timeout Error on "%s"', url)
+        return ("Timeout Error on explorer")
+    except requests.exceptions.RequestException:
+        logger.warning('OOps: Something Error "%s"', url)
+        return ("OOps: Something Error")
 
 # function of receiving data from the site api.2masternodes.com/api/address for a given address.
 def check_2masternodes(address):
@@ -373,13 +374,13 @@ def status(bot, update):
                         cap_btc = (amount+sum_royalty)*coin_price["BTC"]
                         profit_usd = (cap_usd - invest_usd)*100/invest_usd  # Percent of profit
                         profit_btc = (cap_btc - invest_btc)*100/invest_btc
-                        masternode_cap = 'Total value ***BTC***: ' + str(round(cap_btc, 7)) + ' (' + str(round(profit_btc, 2)) + '%)' \
+                        masternode_cap = 'Total value ***BTC***: ' + str(round(cap_btc, 6)) + ' (' + str(round(profit_btc, 2)) + '%)' \
                                      + '\n                   ***USD***: ' + str(round(cap_usd, 2)) + ' (' + str(round(profit_usd, 2)) + '%)'
                     else:
                         masternode_cap = ''
 
-                    string = "***" + coin + "*** `" + masternode + "` " + Status + "\namount - ***" + str(amount) + "***\nsum royalty - ***" \
-                             + str(sum_royalty) + "***\nlast paid - ***" + str(paidAt) + "***\n" + masternode_cap
+                    string = "***" + coin + "*** `" + masternode + "` " + Status + "\namount: ***" + str(amount) + "***\nsum royalty: ***" \
+                             + str(sum_royalty) + "***\nlast paid: ***" + str(paidAt) + "***\n" + masternode_cap
 
                     bot.sendMessage(chat_id=update.message.chat_id, text=string, parse_mode='MARKDOWN', reply_markup=main_markup)
     return MAIN_MENU
