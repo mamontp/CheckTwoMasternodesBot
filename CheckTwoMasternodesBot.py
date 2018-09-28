@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ParseMode
-from telegram.ext import (Updater, CommandHandler, CallbackQueryHandler, MessageHandler,
+from telegram import ReplyKeyboardMarkup
+from telegram.ext import (Updater, CommandHandler, MessageHandler,
                           Filters, RegexHandler, ConversationHandler)
 from emoji import emojize
 import logging
@@ -147,7 +147,7 @@ def add_addres(bot, update):
         return MAIN_MENU
     else:
         answer = str(balance(coin, address))
-        if 'not found' in answer or ' ' in answer:
+        if 'not found' in answer or not(address.isalnum()):
             string = 'The address ***' + address + '*** can not be found in the explorer for the coin ***' + coin + '***\nEnter the address of the wallet'
             bot.send_message(chat_id=update.message.chat_id, text=string, parse_mode='MARKDOWN')
             return ADD_ADDRESS
@@ -173,15 +173,23 @@ def balance(coin, address):
     if coin in url:
         try:
             parsed_string = requests.get(url[coin] + address)
-            if 'error' in parsed_string.text or 'Invalid' in parsed_string.text or 'invalid' in parsed_string.text or 'Error' in parsed_string.text:
+            if 'error' in parsed_string.text or 'Invalid' in parsed_string.text or 'invalid' in parsed_string.text or 'Error' in parsed_string.text or 'Maintenance' in parsed_string.text:
                 logger.warning('Error "%s"', parsed_string.text + url[coin]+ address)
                 string = '***' + address + '*** not found in explorer'
                 return string
             else:
                 if coin == "smart":
-                    return float(parsed_string.json()["balance"])
+                    try:
+                        return float(parsed_string.json()["balance"])
+                    except:
+                        logger.warning('Json parse Error on explorer "%s"', url[coin]+ address)
+                        return ("Json parse Error on explorer")
                 else:
-                    return float(parsed_string.text)
+                    try:
+                        return float(parsed_string.text)
+                    except:
+                        logger.warning('Text parse Error on explorer "%s"', url[coin]+ address)
+                        return ("Text parse Error on explorer")
         except requests.exceptions.HTTPError:
             logger.warning('Http Error on explorer "%s"', url[coin]+ address)
             return ("Http Error on explorer")
@@ -347,7 +355,17 @@ def status(bot, update):
                     historical_price = None
                     masternode = b["masternode"]
 
-                    strStatus = b["strStatus"]
+                    try:
+                        strStatus = b["strStatus"]
+                    except LookupError:
+                        strStatus = b["status"]
+                        if strStatus == 0:
+                            strStatus = 'running'
+                        else:
+                            strStatus = 'starting masternode'
+                    except:
+                        strStatus = 'not status'
+
                     if strStatus == "running":
                         Status = strStatus + emojize(":white_check_mark:", use_aliases=True)
                     else:
