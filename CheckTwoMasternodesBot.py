@@ -9,7 +9,7 @@ import logging
 from SQLighter import SQLighter
 import requests
 from datetime import datetime
-import time
+import time, threading, pickle
 
 # loging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -166,7 +166,7 @@ def balance(coin, address):
            'vivo': 'https://chainz.cryptoid.info/vivo/api.dws?q=getbalance&a=',
            'pac': 'http://usa.pacblockexplorer.com:3002/ext/getbalance/',
            'bitg': 'https://explorer.savebitcoin.io/ext/getbalance/',
-           'dev': 'http://explorer.deviantcoin.io/ext/getbalance/',
+           'dev': 'https://chainz.cryptoid.info/dev/api.dws?q=getbalance&a=',
            'xzc': 'https://xzc.ccore.online/ext/getbalance/',
            'smart': 'https://insight.smartcash.cc/api/addr/',
            'pivx': 'https://chainz.cryptoid.info/pivx/api.dws?q=getbalance&a='}
@@ -422,6 +422,42 @@ def done(bot, update):
     user_data.clear()
     return ConversationHandler.END
 
+# load ConversationHandler States and UserData
+def loadData():
+    try:
+        with open(r"backup/conversations", 'rb') as file:
+            conversation.conversations = pickle.load(file)
+        with open(r"backup/userdata", 'rb') as file:
+            updater.dispatcher.user_data = pickle.load(file)
+    except FileNotFoundError:
+        logger.warning('Data file not found')
+    except:
+        logger.warning('Error loadData')
+
+# store ConversationHandler States and UserData. Store procedure is executed every 60 seconds;
+# to change this value, you can modify the time.sleep(60) instruction.
+def saveData():
+    while True:
+        time.sleep(60)
+        # Before pickling
+        resolved = dict()
+        for k, v in conversation.conversations.items():
+            if isinstance(v, tuple) and len(v) is 2 and isinstance(v[1], Promise):
+                try:
+                    new_state = v[1].result()  # Result of async function
+                except:
+                    new_state = v[0]  # In case async function raised an error, fallback to old state
+                resolved[k] = new_state
+            else:
+                resolved[k] = v
+        try:
+            with open(r"backup/conversations", 'wb+') as file:
+                pickle.dump(resolved, file)
+            with open(r"backup/userdata", 'wb+') as file:
+                pickle.dump(updater.dispatcher.user_data, file)
+        except:
+            logger.warning('Error saveData')
+
 # error method
 def error(bot, update, error):
     logger.warn('Update "%s" caused error "%s"' % (update, error))
@@ -466,6 +502,10 @@ updater.dispatcher.add_handler(conversation)
 
 # error logging
 updater.dispatcher.add_error_handler(error)
+
+# The following code allows you to store ConversationHandler States and UserData and reloading them when you restart the bot.
+loadData()
+threading.Thread(target=saveData).start()
 
 # launching the bot
 updater.start_polling()
