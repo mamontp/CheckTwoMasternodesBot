@@ -169,7 +169,8 @@ def balance(coin, address):
            'dev': 'https://chainz.cryptoid.info/dev/api.dws?q=getbalance&a=',
            'xzc': 'https://xzc.ccore.online/ext/getbalance/',
            'smart': 'https://insight.smartcash.cc/api/addr/',
-           'pivx': 'https://chainz.cryptoid.info/pivx/api.dws?q=getbalance&a='}
+           'pivx': 'https://chainz.cryptoid.info/pivx/api.dws?q=getbalance&a=',
+           'anon': 'https://explorer.anon.zeltrez.io/api/addr/'}
     if coin in url:
         try:
             parsed_string = requests.get(url[coin] + address)
@@ -178,7 +179,7 @@ def balance(coin, address):
                 string = '***' + address + '*** not found in explorer'
                 return string
             else:
-                if coin == "smart":
+                if coin == "smart" or coin == 'anon':
                     try:
                         return float(parsed_string.json()["balance"])
                     except:
@@ -259,27 +260,50 @@ def delete_address(bot, update):
 
 # The function of finding the current value of a coin.
 def get_coin_price(coin):
-    url = 'https://min-api.cryptocompare.com/data/price?fsym=' + str(coin).upper() +'&tsyms=BTC,USD&extraParams=CheckTwoMasternodesBot'
-    try:
-        parsed_string = requests.get(url)
-        if not ('error' in parsed_string.text) and not ('Error' in parsed_string.text):
-            BTC = float(parsed_string.json()["BTC"])
-            USD = float(parsed_string.json()["USD"])
-            return {"BTC": BTC, "USD": USD}
-        else:
-            logger.warning('Error "%s"', parsed_string.text + url)
-    except requests.exceptions.HTTPError:
-            logger.warning('Http Error on "%s"', url)
-            return ("Http Error on ")
-    except requests.exceptions.ConnectionError:
-            logger.warning('Error Connecting to  "%s"', url)
-            return ("Error Connecting to ")
-    except requests.exceptions.Timeout:
-            logger.warning('Timeout Error on "%s"', url)
-            return ("Timeout Error on explorer")
-    except requests.exceptions.RequestException:
-            logger.warning('OOps: Something Error "%s"', url)
-            return ("OOps: Something Error")
+    if coin == 'anon':
+        url = 'https://api.coinmarketcap.com/v2/ticker/3343?convert=BTC'
+        try:
+                parsed_string = requests.get(url)
+                if not ('error ' in parsed_string.text) and not ('Error' in parsed_string.text) and not ('not found' in parsed_string.text):
+                    BTC = float(parsed_string.json()["data"]["quotes"]["BTC"]["price"])
+                    USD = float(parsed_string.json()["data"]["quotes"]["USD"]["price"])
+                    return {"BTC": BTC, "USD": USD}
+                else:
+                    logger.warning('Error "%s"', parsed_string.text + url)
+        except requests.exceptions.HTTPError:
+                logger.warning('Http Error on "%s"', url)
+                return ("Http Error on ")
+        except requests.exceptions.ConnectionError:
+                logger.warning('Error Connecting to  "%s"', url)
+                return ("Error Connecting to ")
+        except requests.exceptions.Timeout:
+                logger.warning('Timeout Error on "%s"', url)
+                return ("Timeout Error on explorer")
+        except requests.exceptions.RequestException:
+                logger.warning('OOps: Something Error "%s"', url)
+                return ("OOps: Something Error")
+    else:
+        url = 'https://min-api.cryptocompare.com/data/price?fsym=' + str(coin).upper() +'&tsyms=BTC,USD&extraParams=CheckTwoMasternodesBot'
+        try:
+            parsed_string = requests.get(url)
+            if not ('error' in parsed_string.text) and not ('Error' in parsed_string.text):
+                BTC = float(parsed_string.json()["BTC"])
+                USD = float(parsed_string.json()["USD"])
+                return {"BTC": BTC, "USD": USD}
+            else:
+                logger.warning('Error "%s"', parsed_string.text + url)
+        except requests.exceptions.HTTPError:
+                logger.warning('Http Error on "%s"', url)
+                return ("Http Error on ")
+        except requests.exceptions.ConnectionError:
+                logger.warning('Error Connecting to  "%s"', url)
+                return ("Error Connecting to ")
+        except requests.exceptions.Timeout:
+                logger.warning('Timeout Error on "%s"', url)
+                return ("Timeout Error on explorer")
+        except requests.exceptions.RequestException:
+                logger.warning('OOps: Something Error "%s"', url)
+                return ("OOps: Something Error")
 
 # The function of finding the historical value of a coin.
 def historical_coin_price(coin, unixdate):
@@ -385,15 +409,21 @@ def status(bot, update):
                                 paidAt = datetime.strptime(paidAt, '%Y-%m-%dT%H:%M:%S.%fZ')
                         sum_royalty = sum_royalty + r["amount"]
 
-                    if type(coin_price) is dict and type(historical_price) is dict and coin_price != {} and historical_price != {}:
-                        invest_usd = amount*historical_price["USD"]     # The cost of coins invested at the time of the start of the node.
-                        invest_btc = amount*historical_price["BTC"]
-                        cap_usd = (amount+sum_royalty)*coin_price["USD"]    # Value of investments and received coins to the current time.
-                        cap_btc = (amount+sum_royalty)*coin_price["BTC"]
-                        profit_usd = (cap_usd - invest_usd)*100/invest_usd  # Percent of profit
-                        profit_btc = (cap_btc - invest_btc)*100/invest_btc
-                        masternode_cap = 'Total value ***BTC***: ' + str(round(cap_btc, 6)) + ' (' + str(round(profit_btc, 2)) + '%)' \
+                    if type(coin_price) is dict and coin_price != {}:
+                        if type(historical_price) is dict and historical_price != {}:
+                            invest_usd = amount*historical_price["USD"]     # The cost of coins invested at the time of the start of the node.
+                            invest_btc = amount*historical_price["BTC"]
+                            cap_usd = (amount+sum_royalty)*coin_price["USD"]    # Value of investments and received coins to the current time.
+                            cap_btc = (amount+sum_royalty)*coin_price["BTC"]
+                            profit_usd = (cap_usd - invest_usd)*100/invest_usd  # Percent of profit
+                            profit_btc = (cap_btc - invest_btc)*100/invest_btc
+                            masternode_cap = 'Total value ***BTC***: ' + str(round(cap_btc, 6)) + ' (' + str(round(profit_btc, 2)) + '%)' \
                                      + '\n                   ***USD***: ' + str(round(cap_usd, 2)) + ' (' + str(round(profit_usd, 2)) + '%)'
+                        else:
+                            cap_usd = (amount+sum_royalty)*coin_price["USD"]    # Value of investments and received coins to the current time.
+                            cap_btc = (amount+sum_royalty)*coin_price["BTC"]
+                            masternode_cap = 'Total value ***BTC***: ' + str(round(cap_btc, 6)) \
+                                     + '\n                   ***USD***: ' + str(round(cap_usd, 2))
                     else:
                         masternode_cap = ''
 
