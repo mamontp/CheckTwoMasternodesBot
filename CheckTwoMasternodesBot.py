@@ -8,8 +8,8 @@ from emoji import emojize
 import logging
 from SQLighter import SQLighter
 import requests
-from datetime import datetime
-import time, threading, pickle
+import datetime
+import time, threading, pickle, configparser
 
 # loging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -59,12 +59,8 @@ def start(bot, update):
         'To obtain statistics on the price of coins in the BTC and USD, a site is used - https://min-api.cryptocompare.com. '
         'The cost of invested coins is taken at the time of the start of the node.\n'
         "/start - start bot\n"
-        "help - help\n"
-        "add - add address\n"
-        "delete - delete address\n"
-        "status - status master nodes\n"
-        "address - show coin address\n"
-        "balance - show balance for address ",
+        "/help - help\n"
+        "Donate - address for donate and contact",
         reply_markup=main_markup)
     return MAIN_MENU
 
@@ -75,12 +71,8 @@ def help(bot, update):
         'The cost of invested coins is taken at the time of the start of the node. '
         'If the bot does not respond, enter /start or "Clear Chat History" and then /start.\n'
         "/start - start bot\n"
-        "help - help\n"
-        "add - add address\n"
-        "delete - delete address\n"
-        "status - status master nodes\n"
-        "address - show coin address\n"
-        "balance - show balabce for address",
+        "/help - help\n"
+        "Donate - address for donate and contact",
         reply_markup=main_markup)
     return MAIN_MENU
 
@@ -231,7 +223,7 @@ def delete(bot, update):
     chat_id = update.message.chat_id
     for row in get_address(chat_id):
         string = row[1] + " - " + row[2]
-        bot.send_message(chat_id=update.message.chat_id, text=string, reply_markup=main_markup)
+        bot.send_message(chat_id=update.message.chat_id, text=string, reply_markup=cancel_markup)
 
     update.message.reply_text('***Please enter a coin and address***\nThe string must be of the form:\n`coin - address`', parse_mode='MARKDOWN', reply_markup=cancel_markup)
     return DELETE_ADDRESS
@@ -406,7 +398,7 @@ def status(bot, update):
                         if sum_royalty == 0:
                             paidAt = r["paidAt"]
                             if not (paidAt is None):
-                                paidAt = datetime.strptime(paidAt, '%Y-%m-%dT%H:%M:%S.%fZ')
+                                paidAt = datetime.datetime.strftime(datetime.datetime.strptime(paidAt, '%Y-%m-%dT%H:%M:%S.%fZ'), '%Y-%m-%d')
                         sum_royalty = sum_royalty + r["amount"]
 
                     if type(coin_price) is dict and coin_price != {}:
@@ -426,9 +418,21 @@ def status(bot, update):
                                      + '\n                   ***USD***: ' + str(round(cap_usd, 2))
                     else:
                         masternode_cap = ''
+                    if not (deployedAt is None):
+                        roi = round(sum_royalty/amount*100)
+                        entered_time = datetime.datetime.strptime(b["enteredAt"], '%Y-%m-%dT%H:%M:%S.%fZ')  # Masternod entry time
+                        time_now = datetime.datetime.now()  # time is now
+                        delta_time = time_now - entered_time   # How much time has passed since the start of the node.
+                        delta_days = delta_time.days
+                        #roi_plans = round(roi/delta_days*365, 2)
+                        delta_seconds = delta_time.total_seconds()
+                        roi_plans = round(roi/delta_seconds*31536000)
+                        roi_str = "entered   ***" + str(delta_days) + "***   days ago \nnow ROI: ***" + str(roi) + "%***   (" + str(roi_plans) + "% per year)"
 
-                    string = "***" + coin + "*** `" + masternode + "` " + Status + "\namount: ***" + str(amount) + "***\nsum royalty: ***" \
-                             + str(sum_royalty) + "***\nlast paid: ***" + str(paidAt) + "***\n" + masternode_cap
+                    #string = "***" + coin + "*** `" + masternode + "` " + Status + "\namount: ***" + str(round(amount, 8)) + "***\nsum royalty: ***" \
+                    #         + str(round(sum_royalty, 8)) + "***\nlast paid: ***" + str(paidAt) + "***\n" + roi_str + "\n" + masternode_cap
+                    string = "***" + coin + "*** `" + masternode + "` " + Status + "\n" + roi_str + "\namount:  ***" + str(round(amount, 8)) \
+                             + "***\n" + masternode_cap + "\nsum royalty: ***" + str(round(sum_royalty, 8)) + "***\nlast paid:      ***" + str(paidAt) + "***"
 
                     bot.sendMessage(chat_id=update.message.chat_id, text=string, parse_mode='MARKDOWN', reply_markup=main_markup)
     return MAIN_MENU
@@ -443,7 +447,8 @@ def donate(bot, update):
         "***BITG*** - ﻿GbnuPAiKPqo49okkddPWydeKqoRPHiVpNf\n"
         "***$PAC*** - PW2vv24GW3AXk9ZTqcPiqg9oFN86ZuL7by\n"
         "***Zcoin*** - aJsbGct8BWgS6nGHL3Bzz938TAzrhe1KYB\n"
-        "***DEV*** - ﻿dYSs22C1dyqyXf46r5X6bNXYVrvaMFxfqW",
+        "***DEV*** - ﻿dYSs22C1dyqyXf46r5X6bNXYVrvaMFxfqW\n"
+        "Comments and suggestions @mamontp",
         parse_mode='MARKDOWN', reply_markup=main_markup)
     return MAIN_MENU
 
@@ -492,12 +497,23 @@ def saveData():
 def error(bot, update, error):
     logger.warn('Update "%s" caused error "%s"' % (update, error))
 
-# getting a token from a file
-with open(r"token.txt", "r") as file:
-        token = [row.strip() for row in file]
+# getting a token from a config file
+
+try:
+    file = open('CheckTwoMasternodesBot.cfg')
+except IOError as e:
+    logger.warn('Not open the file CheckTwoMasternodesBot.cfg')
+    exit()
+else:
+    config = configparser.ConfigParser()
+    config.read('CheckTwoMasternodesBot.cfg')
+    token = config['Global']['token']
+
+#with open(r"test_token.txt", "r") as file:
+#        token = [row.strip() for row in file]
 
 # create an update and pass them our token, which was issued after the creation of the bot
-updater = Updater(token[0])
+updater = Updater(token)
 
 # define the called functions for the main menu buttons
 button_func = {button_addres: send_addres, button_add: add, button_help: help, button_balance: send_balance, button_delete: delete, button_status: status, button_donate: donate}

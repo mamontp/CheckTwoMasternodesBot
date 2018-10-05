@@ -4,7 +4,10 @@ The bot is used for the [2masternodes.com](2masternodes.com) service. The bot ch
 
 ## Using
 
-To use it, you need to record your telegram token in the file **token.txt**. The token must be written in one line.
+To use it, you need to record your telegram token in the file **CheckTwoMasternodesBot.cfg**. Example of entries in the file:
+
+`[Global]`
+`token=your_token`
 
 The following modules must be installed:
 
