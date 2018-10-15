@@ -6,20 +6,19 @@ The bot is used for the [2masternodes.com](2masternodes.com) service. The bot ch
 
 To use it, you need to record your telegram token in the file **CheckTwoMasternodesBot.cfg**. Example of entries in the file:
 
-`[Global]`
+```[Global]
+token=your_token
 
-`token=your_token`
+listen=XX.XX.XX.XX 		<- The listen address
 
-`listen=XX.XX.XX.XX` 		<- The listen address
+port=8443
 
-`port=8443`
-
-`webhook_url=XX.XX.XX.XX`	<- The webhook_url should be the actual URL of your webhook.
-
+webhook_url=XX.XX.XX.XX	<- The webhook_url should be the actual URL of your webhook.
+```
 ### Using Webhook
-If you are using Webhook, then you need to generate certificates and put them along the `cert/` path.
- 
-####Creating a self-signed certificate using OpenSSL
+If you are using Webhook, then you need to generate certificates and put them along the `cert/` path. 
+
+#### Creating a self-signed certificate using OpenSSL
 
 To create a self-signed SSL certificate using openssl, run the following command:
 
