@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 from telegram import ReplyKeyboardMarkup
@@ -326,8 +326,8 @@ def historical_coin_price(coin, unixdate):
 
 # function of receiving data from the site api.2masternodes.com/api/address for a given address.
 def check_2masternodes(address):
+    url = 'http://api.2masternodes.com/api/address/'
     try:
-        url = 'http://api.2masternodes.com/api/address/'
         parsed_string = requests.get(url+ address)
         if 'error' in parsed_string.text or 'Invalid' in parsed_string.text or 'invalid' in parsed_string.text or 'Error' in parsed_string.text or 'ot Found' in parsed_string.text:
             logger.warning('Error "%s"', parsed_string.text + url + address)
@@ -424,13 +424,10 @@ def status(bot, update):
                         time_now = datetime.datetime.now()  # time is now
                         delta_time = time_now - entered_time   # How much time has passed since the start of the node.
                         delta_days = delta_time.days
-                        #roi_plans = round(roi/delta_days*365, 2)
                         delta_seconds = delta_time.total_seconds()
                         roi_plans = round(roi/delta_seconds*31536000)
                         roi_str = "entered   ***" + str(delta_days) + "***   days ago \nnow ROI: ***" + str(roi) + "%***   (" + str(roi_plans) + "% per year)"
 
-                    #string = "***" + coin + "*** `" + masternode + "` " + Status + "\namount: ***" + str(round(amount, 8)) + "***\nsum royalty: ***" \
-                    #         + str(round(sum_royalty, 8)) + "***\nlast paid: ***" + str(paidAt) + "***\n" + roi_str + "\n" + masternode_cap
                     string = "***" + coin + "*** `" + masternode + "` " + Status + "\n" + roi_str + "\namount:  ***" + str(round(amount, 8)) \
                              + "***\n" + masternode_cap + "\nsum royalty: ***" + str(round(sum_royalty, 8)) + "***\nlast paid:      ***" + str(paidAt) + "***"
 
@@ -507,7 +504,11 @@ except IOError as e:
 else:
     config = configparser.ConfigParser()
     config.read('CheckTwoMasternodesBot.cfg')
-    token = config['Global']['token']
+
+token = config['Global']['token']
+listen = config['Global']['listen']
+port = int(config['Global']['port'])
+webhook_url = config['Global']['webhook_url']
 
 #with open(r"test_token.txt", "r") as file:
 #        token = [row.strip() for row in file]
@@ -549,12 +550,32 @@ updater.dispatcher.add_handler(conversation)
 # error logging
 updater.dispatcher.add_error_handler(error)
 
+# launching the bot
+try:
+    file = open('cert/private.key')
+except IOError as e:
+    logger.warn('Not open the file cert/private.key')
+    updater.start_polling()
+    logger.info('Starting polling...')
+else:
+    try:
+        file = open('cert/cert.pem')
+    except IOError as e:
+        logger.warn('Not open the file cert/cert.pem')
+        updater.start_polling()
+        logger.info('Starting polling...')
+    else:
+        updater.start_webhook(listen=listen,
+                          port=port,
+                          url_path=token,
+                          key='cert/private.key',
+                          cert='cert/cert.pem',
+                          webhook_url='https://%s:%s/%s' % (webhook_url, port, token))
+        logger.info('Starting webhook...')
+
 # The following code allows you to store ConversationHandler States and UserData and reloading them when you restart the bot.
 loadData()
 threading.Thread(target=saveData).start()
-
-# launching the bot
-updater.start_polling()
 
 # start a wait loop
 updater.idle()
