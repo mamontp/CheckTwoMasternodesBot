@@ -6,13 +6,11 @@ The bot is used for the [2masternodes.com](2masternodes.com) service. The bot ch
 
 To use it, you need to record your telegram token in the file **CheckTwoMasternodesBot.cfg**. Example of entries in the file:
 
-```[Global]
+```
+[Global]
 token=your_token
-
 listen=XX.XX.XX.XX 		<- The listen address
-
 port=8443
-
 webhook_url=XX.XX.XX.XX	<- The webhook_url should be the actual URL of your webhook.
 ```
 ### Using Webhook
