@@ -9,7 +9,7 @@ To use it, you need to record your telegram token in the file **CheckTwoMasterno
 ```
 [Global]
 token=your_token
-listen=XX.XX.XX.XX 		<- The listen address
+listen=XX.XX.XX.XX 	<- The listen address
 port=8443
 webhook_url=XX.XX.XX.XX	<- The webhook_url should be the actual URL of your webhook.
 ```
