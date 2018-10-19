@@ -91,13 +91,14 @@ def send_messages(last_time):
     else:
         explorer_url = {'gbx': 'https://explorer.gobyte.network:5002/address/',
                         'vivo': 'https://chainz.cryptoid.info/vivo/search.dws?q=',
-                        'pac': 'http://usa.pacblockexplorer.com:3002/address/',
+                        'pac': 'http://explorer.paccoin.net/address/', 			# 'http://usa.pacblockexplorer.com:3002/address/',
                         'bitg': 'https://www.coinexplorer.net/BITG/address/',
                         'dev': 'https://chainz.cryptoid.info/dev/search.dws?q=',
                         'xzc': 'https://chainz.cryptoid.info/xzc/search.dws?q=',
                         'smart': 'http://explorer3.smartcash.cc/address/',
                         'pivx': 'https://chainz.cryptoid.info/pivx/search.dws?q=',
-                        'anon': 'https://explorer.anon.zeltrez.io/address/'}
+                        'anon': 'https://explorer.anon.zeltrez.io/address/',
+                        'mnp': 'https://explorer.mnpcoin.pro/address/'}
         for row in data:
             parsed_string = check_2masternodes(row[2])
             if not ('Error' in parsed_string) and not('not found' in parsed_string):

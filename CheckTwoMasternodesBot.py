@@ -38,7 +38,7 @@ reply_keyboard = [[button_status, button_balance, button_addres], [button_add, b
 main_markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
 
 # Create a keyboard of coins.
-coin_keyboard = [['vivo', 'gbx', 'pac', 'dev', 'anon'], ['smart', 'bitg', 'pivx', 'xzc'], ['cancel']]
+coin_keyboard = [['vivo', 'gbx', 'pac', 'dev', 'anon'], ['smart', 'bitg', 'pivx', 'xzc', 'mnp'], ['cancel']]
 coin_markup = ReplyKeyboardMarkup(coin_keyboard, one_time_keyboard=True, resize_keyboard=True)
 
 # Create a keyboard of cancel.
@@ -115,7 +115,7 @@ def add(bot, update):
 
 # dialog for adding a coin
 def add_coin(bot, update):
-    available_coins = {'xzc', 'gbx', 'pac', 'dev', 'smart', 'bitg', 'vivo', 'pivx', 'anon'}
+    available_coins = {'xzc', 'gbx', 'pac', 'dev', 'smart', 'bitg', 'vivo', 'pivx', 'anon', 'mnp'}
     global coin
     coin = update.message.text
     if coin == 'cancel':
@@ -156,13 +156,14 @@ def add_addres(bot, update):
 def balance(coin, address):
     url = {'gbx': 'https://explorer.gobyte.network/ext/getbalance/',
            'vivo': 'https://chainz.cryptoid.info/vivo/api.dws?q=getbalance&a=',
-           'pac': 'http://usa.pacblockexplorer.com:3002/ext/getbalance/',
+           'pac': 'http://explorer.paccoin.io/api/addr/',       # 'pac': 'http://usa.pacblockexplorer.com:3002/ext/getbalance/',
            'bitg': 'https://explorer.savebitcoin.io/ext/getbalance/',
            'dev': 'https://chainz.cryptoid.info/dev/api.dws?q=getbalance&a=',
            'xzc': 'https://xzc.ccore.online/ext/getbalance/',
            'smart': 'https://insight.smartcash.cc/api/addr/',
            'pivx': 'https://chainz.cryptoid.info/pivx/api.dws?q=getbalance&a=',
-           'anon': 'https://explorer.anon.zeltrez.io/api/addr/'}
+           'anon': 'https://explorer.anon.zeltrez.io/api/addr/',
+           'mnp': 'https://explorer.mnpcoin.pro/ext/getbalance/'}
     if coin in url:
         try:
             parsed_string = requests.get(url[coin] + address)
@@ -171,7 +172,7 @@ def balance(coin, address):
                 string = '***' + address + '*** not found in explorer'
                 return string
             else:
-                if coin == "smart" or coin == 'anon':
+                if coin == "smart" or coin == 'anon' or coin == 'pac':
                     try:
                         return float(parsed_string.json()["balance"])
                     except:
@@ -252,10 +253,11 @@ def delete_address(bot, update):
 
 # The function of finding the current value of a coin.
 def get_coin_price(coin):
-    if coin == 'anon':
-        url = 'https://api.coinmarketcap.com/v2/ticker/3343?convert=BTC'
+    if coin == 'anon' or coin == 'mnp':
+        url = {'anon': 'https://api.coinmarketcap.com/v2/ticker/3343?convert=BTC',
+                'mnp': 'https://api.coinmarketcap.com/v2/ticker/3348?convert=BTC'}
         try:
-                parsed_string = requests.get(url)
+                parsed_string = requests.get(url[coin])
                 if not ('error ' in parsed_string.text) and not ('Error' in parsed_string.text) and not ('not found' in parsed_string.text):
                     BTC = float(parsed_string.json()["data"]["quotes"]["BTC"]["price"])
                     USD = float(parsed_string.json()["data"]["quotes"]["USD"]["price"])
