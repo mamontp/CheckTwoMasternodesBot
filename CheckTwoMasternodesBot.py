@@ -389,12 +389,6 @@ def status(bot, update):
                     else:
                         Status = strStatus + emojize(":x:", use_aliases=True)
 
-                    deployedAt = b["deployedAt"]    # data and time runing masternode
-                    if not (deployedAt is None):
-                        #deployedAtH = datetime.strftime(datetime.strptime(deployedAt, '%Y-%m-%dT%H:%M:%S.%fZ'), '%Y-%m-%d')  # data and time runing masternode in human readable format 2018-07-12
-                        deployedAtU = time.mktime(time.strptime(deployedAt, '%Y-%m-%dT%H:%M:%S.%fZ'))   # data and time runing masternode in Unix time format
-                        historical_price = historical_coin_price(coin, deployedAtU)
-
                     amount = b["amount"]
                     for r in b["royalty"]:
                         if sum_royalty == 0:
@@ -402,6 +396,23 @@ def status(bot, update):
                             if not (paidAt is None):
                                 paidAt = datetime.datetime.strftime(datetime.datetime.strptime(paidAt, '%Y-%m-%dT%H:%M:%S.%fZ'), '%Y-%m-%d')
                         sum_royalty = sum_royalty + r["amount"]
+
+                    enteredAt = b["enteredAt"]    # data and time runing masternode
+                    if not (enteredAt is None):
+                        #deployedAtH = datetime.strftime(datetime.strptime(deployedAt, '%Y-%m-%dT%H:%M:%S.%fZ'), '%Y-%m-%d')  # data and time runing masternode in human readable format 2018-07-12
+                        enteredAtU = time.mktime(time.strptime(enteredAt, '%Y-%m-%dT%H:%M:%S.%fZ'))   # data and time runing masternode in Unix time format
+                        historical_price = historical_coin_price(coin, enteredAtU)
+
+                        roi = round(sum_royalty/amount*100)
+                        entered_time = datetime.datetime.strptime(enteredAt, '%Y-%m-%dT%H:%M:%S.%fZ')  # Masternod entry time
+                        time_now = datetime.datetime.now()  # time is now
+                        delta_time = time_now - entered_time   # How much time has passed since the start of the node.
+                        delta_days = delta_time.days
+                        delta_seconds = delta_time.total_seconds()
+                        roi_plans = round(roi/delta_seconds*31536000)
+                        roi_str = "entered   ***" + str(delta_days) + "***   days ago \nnow ROI: ***" + str(roi) + "%***   (" + str(roi_plans) + "% per year)"
+                    else:
+                        roi_str = ''
 
                     if type(coin_price) is dict and coin_price != {}:
                         if type(historical_price) is dict and historical_price != {}:
@@ -420,15 +431,9 @@ def status(bot, update):
                                      + '\n                   ***USD***: ' + str(round(cap_usd, 2))
                     else:
                         masternode_cap = ''
-                    if not (deployedAt is None):
-                        roi = round(sum_royalty/amount*100)
-                        entered_time = datetime.datetime.strptime(b["enteredAt"], '%Y-%m-%dT%H:%M:%S.%fZ')  # Masternod entry time
-                        time_now = datetime.datetime.now()  # time is now
-                        delta_time = time_now - entered_time   # How much time has passed since the start of the node.
-                        delta_days = delta_time.days
-                        delta_seconds = delta_time.total_seconds()
-                        roi_plans = round(roi/delta_seconds*31536000)
-                        roi_str = "entered   ***" + str(delta_days) + "***   days ago \nnow ROI: ***" + str(roi) + "%***   (" + str(roi_plans) + "% per year)"
+
+#                    if not (enteredAt is None):
+
 
                     string = "***" + coin + "*** `" + masternode + "` " + Status + "\n" + roi_str + "\namount:  ***" + str(round(amount, 8)) \
                              + "***\n" + masternode_cap + "\nsum royalty: ***" + str(round(sum_royalty, 8)) + "***\nlast paid:      ***" + str(paidAt) + "***"
@@ -442,7 +447,6 @@ def donate(bot, update):
         "***BTC*** - 128QgnZ2DwsFBssJdhrULCpMAuJqufp7pF\n"
         "***ETC*** - 0xf1d1dc2e0c927B69C69886c2D38B980E0C864251\n"
         "***GBX*** - GeWTh4Gg2mBzEsocGE3cVfpcrNdyyGPbnL\n"
-        "***VIVO*** - VPPSGt1jwU8GnGpDA4hqFsk8pwj9V7Rsw4\n"
         "***BITG*** - ﻿GbnuPAiKPqo49okkddPWydeKqoRPHiVpNf\n"
         "***$PAC*** - PW2vv24GW3AXk9ZTqcPiqg9oFN86ZuL7by\n"
         "***Zcoin*** - aJsbGct8BWgS6nGHL3Bzz938TAzrhe1KYB\n"
