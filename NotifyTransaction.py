@@ -98,7 +98,8 @@ def send_messages(last_time):
                         'smart': 'http://explorer3.smartcash.cc/address/',
                         'pivx': 'https://chainz.cryptoid.info/pivx/search.dws?q=',
                         'anon': 'https://explorer.anon.zeltrez.io/address/',
-                        'mnp': 'https://explorer.mnpcoin.pro/address/'}
+                        'mnp': 'https://explorer.mnpcoin.pro/address/',
+                        'bwk': 'https://explorer.bulwarkcrypto.com/#/address/'}
         for row in data:
             parsed_string = check_2masternodes(row[2])
             if not ('Error' in parsed_string) and not('not found' in parsed_string):

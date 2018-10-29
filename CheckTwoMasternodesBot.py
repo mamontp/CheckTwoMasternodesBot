@@ -38,7 +38,7 @@ reply_keyboard = [[button_status, button_balance, button_addres], [button_add, b
 main_markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
 
 # Create a keyboard of coins.
-coin_keyboard = [['vivo', 'gbx', 'pac', 'dev', 'anon'], ['smart', 'bitg', 'pivx', 'xzc', 'mnp'], ['cancel']]
+coin_keyboard = [['gbx', 'pac', 'dev', 'bwk'], ['bitg', 'pivx', 'xzc', 'mnp'], ['cancel']]
 coin_markup = ReplyKeyboardMarkup(coin_keyboard, one_time_keyboard=True, resize_keyboard=True)
 
 # Create a keyboard of cancel.
@@ -115,7 +115,7 @@ def add(bot, update):
 
 # dialog for adding a coin
 def add_coin(bot, update):
-    available_coins = {'xzc', 'gbx', 'pac', 'dev', 'smart', 'bitg', 'vivo', 'pivx', 'anon', 'mnp'}
+    available_coins = {'xzc', 'gbx', 'pac', 'dev', 'smart', 'bitg', 'vivo', 'pivx', 'bwk', 'mnp'}
     global coin
     coin = update.message.text
     if coin == 'cancel':
@@ -163,7 +163,8 @@ def balance(coin, address):
            'smart': 'https://insight.smartcash.cc/api/addr/',
            'pivx': 'https://chainz.cryptoid.info/pivx/api.dws?q=getbalance&a=',
            'anon': 'https://explorer.anon.zeltrez.io/api/addr/',
-           'mnp': 'https://explorer.mnpcoin.pro/ext/getbalance/'}
+           'mnp': 'https://explorer.mnpcoin.pro/ext/getbalance/',
+           'bwk': 'https://explorer.bulwarkcrypto.com/ext/getbalance/'}
     if coin in url:
         try:
             parsed_string = requests.get(url[coin] + address)
