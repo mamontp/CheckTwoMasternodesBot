@@ -60,7 +60,12 @@ def start(bot, update):
         'The cost of invested coins is taken at the time of the start of the node.\n'
         "/start - start bot\n"
         "/help - help\n"
-        "Donate - address for donate and contact",
+        "/status - show masternodes status\n"
+        "/balance - show coin balance by address\n"
+        "/address - show coin addresses\n"
+        "add - add coin address\n"
+        "delete - delete coin address\n"
+        "/donate - show address for donate and contact",
         reply_markup=main_markup)
     return MAIN_MENU
 
@@ -72,7 +77,12 @@ def help(bot, update):
         'If the bot does not respond, enter /start or "Clear Chat History" and then /start.\n'
         "/start - start bot\n"
         "/help - help\n"
-        "Donate - address for donate and contact",
+        "/status - show masternodes status\n"
+        "/balance - show coin balance by address\n"
+        "/address - show coin addresses\n"
+        "add - add coin address\n"
+        "delete - delete coin address\n"
+        "/donate - show address for donate and contact",
         reply_markup=main_markup)
     return MAIN_MENU
 
@@ -119,7 +129,7 @@ def add_coin(bot, update):
     global coin
     coin = update.message.text
     if coin == 'cancel':
-        update.message.reply_text('Cancel', reply_markup=main_markup)
+        bot.send_message(chat_id=update.message.chat_id, text='Cancel', reply_markup=main_markup)
         return MAIN_MENU
     else:
         if coin in available_coins:
@@ -156,7 +166,8 @@ def add_addres(bot, update):
 def balance(coin, address):
     url = {'gbx': 'https://explorer.gobyte.network/ext/getbalance/',
            'vivo': 'https://chainz.cryptoid.info/vivo/api.dws?q=getbalance&a=',
-           'pac': 'http://explorer.paccoin.io/api/addr/',       # 'pac': 'http://usa.pacblockexplorer.com:3002/ext/getbalance/',
+           'pac': 'http://explorer.paccoin.net/api/addr/',
+           #'pac': 'http://usa.pacblockexplorer.com:3002/ext/getbalance/',
            'bitg': 'https://explorer.savebitcoin.io/ext/getbalance/',
            'dev': 'https://chainz.cryptoid.info/dev/api.dws?q=getbalance&a=',
            'xzc': 'https://xzc.ccore.online/ext/getbalance/',
@@ -235,7 +246,7 @@ def delete_address(bot, update):
     chat_id = update.message.chat_id
     coin_address = update.message.text
     if coin_address == 'cancel':
-        update.message.reply_text('Cancel', reply_markup=main_markup)
+        bot.send_message(chat_id=update.message.chat_id, text='Cancel', reply_markup=main_markup)
         return MAIN_MENU
     else:
         try:
@@ -359,87 +370,88 @@ def status(bot, update):
         bot.send_message(chat_id=update.message.chat_id, text='You do not have any addresses. Add address please.', reply_markup=main_markup)
     else:
         for row in data:
-            parsed_string = check_2masternodes(row[2])
-            if 'Error' in parsed_string or 'not found' in parsed_string:
-                bot.send_message(chat_id=update.message.chat_id, text=parsed_string, parse_mode='MARKDOWN', reply_markup=main_markup)
-            else:
-                json_string = parsed_string.json()
-                coin = json_string["coin"]
+            if not row[1] == 'anon' and not row[1] == 'vivo' and not row[1] == 'smart':
+                parsed_string = check_2masternodes(row[2])
+                if 'Error' in parsed_string or 'not found' in parsed_string:
+                    bot.send_message(chat_id=update.message.chat_id, text=parsed_string, parse_mode='MARKDOWN', reply_markup=main_markup)
+                else:
+                    json_string = parsed_string.json()
+                    coin = json_string["coin"]
 
-                coin_price = get_coin_price(coin)
+                    coin_price = get_coin_price(coin)
 
-                for b in json_string["beneficiary"]:
-                    sum_royalty = 0
-                    paidAt = "None"
-                    historical_price = None
-                    masternode = b["masternode"]
+                    for b in json_string["beneficiary"]:
+                        sum_royalty = 0
+                        paidAt = "None"
+                        historical_price = None
+                        masternode = b["masternode"]
 
-                    try:
-                        strStatus = b["strStatus"]
-                    except LookupError:
-                        strStatus = b["status"]
-                        if strStatus == 0:
-                            strStatus = 'running'
+                        try:
+                            strStatus = b["strStatus"]
+                        except LookupError:
+                            strStatus = b["status"]
+                            if strStatus == 0:
+                                strStatus = 'running'
+                            else:
+                                strStatus = 'starting masternode'
+                        except:
+                            strStatus = 'not status'
+
+                        if strStatus == "running":
+                            Status = strStatus + emojize(":white_check_mark:", use_aliases=True)
                         else:
-                            strStatus = 'starting masternode'
-                    except:
-                        strStatus = 'not status'
+                            Status = strStatus + emojize(":x:", use_aliases=True)
 
-                    if strStatus == "running":
-                        Status = strStatus + emojize(":white_check_mark:", use_aliases=True)
-                    else:
-                        Status = strStatus + emojize(":x:", use_aliases=True)
+                        amount = b["amount"]
+                        for r in b["royalty"]:
+                            if sum_royalty == 0:
+                                paidAt = r["paidAt"]
+                                if not (paidAt is None):
+                                    paidAt = datetime.datetime.strftime(datetime.datetime.strptime(paidAt, '%Y-%m-%dT%H:%M:%S.%fZ'), '%Y-%m-%d')
+                            sum_royalty = sum_royalty + r["amount"]
 
-                    amount = b["amount"]
-                    for r in b["royalty"]:
-                        if sum_royalty == 0:
-                            paidAt = r["paidAt"]
-                            if not (paidAt is None):
-                                paidAt = datetime.datetime.strftime(datetime.datetime.strptime(paidAt, '%Y-%m-%dT%H:%M:%S.%fZ'), '%Y-%m-%d')
-                        sum_royalty = sum_royalty + r["amount"]
+                        enteredAt = b["enteredAt"]    # data and time runing masternode
+                        if not (enteredAt is None):
+                            #deployedAtH = datetime.strftime(datetime.strptime(deployedAt, '%Y-%m-%dT%H:%M:%S.%fZ'), '%Y-%m-%d')  # data and time runing masternode in human readable format 2018-07-12
+                            enteredAtU = time.mktime(time.strptime(enteredAt, '%Y-%m-%dT%H:%M:%S.%fZ'))   # data and time runing masternode in Unix time format
+                            historical_price = historical_coin_price(coin, enteredAtU)
 
-                    enteredAt = b["enteredAt"]    # data and time runing masternode
-                    if not (enteredAt is None):
-                        #deployedAtH = datetime.strftime(datetime.strptime(deployedAt, '%Y-%m-%dT%H:%M:%S.%fZ'), '%Y-%m-%d')  # data and time runing masternode in human readable format 2018-07-12
-                        enteredAtU = time.mktime(time.strptime(enteredAt, '%Y-%m-%dT%H:%M:%S.%fZ'))   # data and time runing masternode in Unix time format
-                        historical_price = historical_coin_price(coin, enteredAtU)
-
-                        roi = round(sum_royalty/amount*100)
-                        entered_time = datetime.datetime.strptime(enteredAt, '%Y-%m-%dT%H:%M:%S.%fZ')  # Masternod entry time
-                        time_now = datetime.datetime.now()  # time is now
-                        delta_time = time_now - entered_time   # How much time has passed since the start of the node.
-                        delta_days = delta_time.days
-                        delta_seconds = delta_time.total_seconds()
-                        roi_plans = round(roi/delta_seconds*31536000)
-                        roi_str = "entered   ***" + str(delta_days) + "***   days ago \nnow ROI: ***" + str(roi) + "%***   (" + str(roi_plans) + "% per year)"
-                    else:
-                        roi_str = ''
-
-                    if type(coin_price) is dict and coin_price != {}:
-                        if type(historical_price) is dict and historical_price != {}:
-                            invest_usd = amount*historical_price["USD"]     # The cost of coins invested at the time of the start of the node.
-                            invest_btc = amount*historical_price["BTC"]
-                            cap_usd = (amount+sum_royalty)*coin_price["USD"]    # Value of investments and received coins to the current time.
-                            cap_btc = (amount+sum_royalty)*coin_price["BTC"]
-                            profit_usd = (cap_usd - invest_usd)*100/invest_usd  # Percent of profit
-                            profit_btc = (cap_btc - invest_btc)*100/invest_btc
-                            masternode_cap = 'Total value ***BTC***: ' + str(round(cap_btc, 6)) + ' (' + str(round(profit_btc, 2)) + '%)' \
-                                     + '\n                   ***USD***: ' + str(round(cap_usd, 2)) + ' (' + str(round(profit_usd, 2)) + '%)'
+                            roi = round(sum_royalty/amount*100)
+                            entered_time = datetime.datetime.strptime(enteredAt, '%Y-%m-%dT%H:%M:%S.%fZ')  # Masternod entry time
+                            time_now = datetime.datetime.now()  # time is now
+                            delta_time = time_now - entered_time   # How much time has passed since the start of the node.
+                            delta_days = delta_time.days
+                            delta_seconds = delta_time.total_seconds()
+                            roi_plans = round(roi/delta_seconds*31536000)
+                            roi_str = "entered   ***" + str(delta_days) + "***   days ago \nnow ROI: ***" + str(roi) + "%***   (" + str(roi_plans) + "% per year)"
                         else:
-                            cap_usd = (amount+sum_royalty)*coin_price["USD"]    # Value of investments and received coins to the current time.
-                            cap_btc = (amount+sum_royalty)*coin_price["BTC"]
-                            masternode_cap = 'Total value ***BTC***: ' + str(round(cap_btc, 6)) \
-                                     + '\n                   ***USD***: ' + str(round(cap_usd, 2))
-                    else:
-                        masternode_cap = ''
+                            roi_str = ''
 
-#                    if not (enteredAt is None):
+                        if type(coin_price) is dict and coin_price != {}:
+                            if type(historical_price) is dict and historical_price != {}:
+                                invest_usd = amount*historical_price["USD"]     # The cost of coins invested at the time of the start of the node.
+                                invest_btc = amount*historical_price["BTC"]
+                                cap_usd = (amount+sum_royalty)*coin_price["USD"]    # Value of investments and received coins to the current time.
+                                cap_btc = (amount+sum_royalty)*coin_price["BTC"]
+                                profit_usd = (cap_usd - invest_usd)*100/invest_usd  # Percent of profit
+                                profit_btc = (cap_btc - invest_btc)*100/invest_btc
+                                masternode_cap = 'Total value ***BTC***: ' + str(round(cap_btc, 6)) + ' (' + str(round(profit_btc, 2)) + '%)' \
+                                         + '\n                   ***USD***: ' + str(round(cap_usd, 2)) + ' (' + str(round(profit_usd, 2)) + '%)'
+                            else:
+                                cap_usd = (amount+sum_royalty)*coin_price["USD"]    # Value of investments and received coins to the current time.
+                                cap_btc = (amount+sum_royalty)*coin_price["BTC"]
+                                masternode_cap = 'Total value ***BTC***: ' + str(round(cap_btc, 6)) \
+                                         + '\n                   ***USD***: ' + str(round(cap_usd, 2))
+                        else:
+                            masternode_cap = ''
+
+#                       if not (enteredAt is None):
 
 
-                    string = "***" + coin + "*** `" + masternode + "` " + Status + "\n" + roi_str + "\namount:  ***" + str(round(amount, 8)) \
-                             + "***\n" + masternode_cap + "\nsum royalty: ***" + str(round(sum_royalty, 8)) + "***\nlast paid:      ***" + str(paidAt) + "***"
+                        string = "***" + coin + "*** `" + masternode + "` " + Status + "\n" + roi_str + "\namount:  ***" + str(round(amount, 8)) \
+                                 + "***\n" + masternode_cap + "\nsum royalty: ***" + str(round(sum_royalty, 8)) + "***\nlast paid:      ***" + str(paidAt) + "***"
 
-                    bot.sendMessage(chat_id=update.message.chat_id, text=string, parse_mode='MARKDOWN', reply_markup=main_markup)
+                        bot.sendMessage(chat_id=update.message.chat_id, text=string, parse_mode='MARKDOWN', reply_markup=main_markup)
     return MAIN_MENU
 
 def donate(bot, update):
@@ -522,6 +534,18 @@ webhook_url = config['Global']['webhook_url']
 
 # create an update and pass them our token, which was issued after the creation of the bot
 updater = Updater(token)
+
+# add command /status for show masternodes status
+updater.dispatcher.add_handler(CommandHandler("status", status))
+
+# add command /balance for send balance to chat
+updater.dispatcher.add_handler(CommandHandler("balance", send_balance))
+
+# add command /address for send coin addresses
+updater.dispatcher.add_handler(CommandHandler("address", send_addres))
+
+# add command /donate
+updater.dispatcher.add_handler(CommandHandler("donate", donate))
 
 # define the called functions for the main menu buttons
 button_func = {button_addres: send_addres, button_add: add, button_help: help, button_balance: send_balance, button_delete: delete, button_status: status, button_donate: donate}

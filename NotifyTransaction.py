@@ -101,27 +101,28 @@ def send_messages(last_time):
                         'mnp': 'https://explorer.mnpcoin.pro/address/',
                         'bwk': 'https://explorer.bulwarkcrypto.com/#/address/'}
         for row in data:
-            parsed_string = check_2masternodes(row[2])
-            if not ('Error' in parsed_string) and not('not found' in parsed_string):
-                json_string = parsed_string.json()
-                coin = json_string["coin"]
-                for b in json_string["beneficiary"]:
-                    paidAt = "None"
-                    masternode = b["masternode"]
+            if not row[1] == 'anon' and not row[1] == 'vivo' and not row[1] == 'smart':
+                parsed_string = check_2masternodes(row[2])
+                if not ('Error' in parsed_string) and not('not found' in parsed_string):
+                    json_string = parsed_string.json()
+                    coin = json_string["coin"]
+                    for b in json_string["beneficiary"]:
+                        paidAt = "None"
+                        masternode = b["masternode"]
 
-                    for r in b["royalty"]:
-                        paidAt = r["paidAt"]
-                        if not (paidAt is None):
-                            paidAt = datetime.datetime.strptime(paidAt, '%Y-%m-%dT%H:%M:%S.%fZ')
-                            if paidAt > last_time:
-                                link = explorer_url[coin] + str(row[2])
-                                bot_chatID = row[0]
-                                amount = r["amount"]
-                                text = '`' + masternode + '` send you [' + str(amount) + ' ' + str(coin).upper() + '](' + link +') at ' + str(paidAt) + ' UTC'
-                                #print(text)
-                                keys = {'chat_id': bot_chatID, 'parse_mode': 'Markdown', 'text': text, 'disable_web_page_preview': 'True'}
-                                url = 'https://api.telegram.org/bot' + token + '/sendMessage'
-                                requests.get(url, params=keys)
+                        for r in b["royalty"]:
+                            paidAt = r["paidAt"]
+                            if not (paidAt is None):
+                                paidAt = datetime.datetime.strptime(paidAt, '%Y-%m-%dT%H:%M:%S.%fZ')
+                                if paidAt > last_time:
+                                    link = explorer_url[coin] + str(row[2])
+                                    bot_chatID = row[0]
+                                    amount = r["amount"]
+                                    text = '`' + masternode + '` send you [' + str(amount) + ' ' + str(coin).upper() + '](' + link +') at ' + str(paidAt) + ' UTC'
+                                    #print(text)
+                                    keys = {'chat_id': bot_chatID, 'parse_mode': 'Markdown', 'text': text, 'disable_web_page_preview': 'True'}
+                                    url = 'https://api.telegram.org/bot' + token + '/sendMessage'
+                                    requests.get(url, params=keys)
 
 # error method
 def error(bot, update, error):
