@@ -86,6 +86,7 @@ def check_2masternodes(address):
 # Sending a message if paidAt is newer than the time of the last check (last_time).
 def send_messages(last_time):
     data = get_address() # Data from DB
+    count_all = 0
     if not data:
         logger.warning('You do not have any addresses. Add address please.')
     else:
@@ -122,7 +123,9 @@ def send_messages(last_time):
                                     #print(text)
                                     keys = {'chat_id': bot_chatID, 'parse_mode': 'Markdown', 'text': text, 'disable_web_page_preview': 'True'}
                                     url = 'https://api.telegram.org/bot' + token + '/sendMessage'
-                                    requests.get(url, params=keys)
+                                    teleg_output = requests.get(url, params=keys)
+                                    count_all += 1
+                                    logger.info(" count " + str(count_all) + " - " + teleg_output.text)
 
 # error method
 def error(bot, update, error):

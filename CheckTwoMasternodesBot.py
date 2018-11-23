@@ -166,7 +166,7 @@ def add_addres(bot, update):
 def balance(coin, address):
     url = {'gbx': 'https://explorer.gobyte.network/ext/getbalance/',
            'vivo': 'https://chainz.cryptoid.info/vivo/api.dws?q=getbalance&a=',
-           'pac': 'http://explorer.paccoin.net/api/addr/',
+           'pac': 'http://explorer.paccoin.io/api/addr/',
            #'pac': 'http://usa.pacblockexplorer.com:3002/ext/getbalance/',
            'bitg': 'https://explorer.savebitcoin.io/ext/getbalance/',
            'dev': 'https://chainz.cryptoid.info/dev/api.dws?q=getbalance&a=',
@@ -433,8 +433,19 @@ def status(bot, update):
                                 invest_btc = amount*historical_price["BTC"]
                                 cap_usd = (amount+sum_royalty)*coin_price["USD"]    # Value of investments and received coins to the current time.
                                 cap_btc = (amount+sum_royalty)*coin_price["BTC"]
-                                profit_usd = (cap_usd - invest_usd)*100/invest_usd  # Percent of profit
-                                profit_btc = (cap_btc - invest_btc)*100/invest_btc
+                                try:
+                                    profit_usd = (cap_usd - invest_usd)*100/invest_usd  # Percent of profit
+                                except ZeroDivisionError as error:
+                                    # Output expected ZeroDivisionErrors.
+                                    logger.error('ZeroDivisionErrors "%s"', error)
+                                    profit_usd = 0
+                                try:
+                                    profit_btc = (cap_btc - invest_btc)*100/invest_btc
+                                except ZeroDivisionError as error:
+                                    # Output expected ZeroDivisionErrors.
+                                    logger.error('ZeroDivisionErrors "%s"', error)
+                                    profit_btc = 0
+
                                 masternode_cap = 'Total value ***BTC***: ' + str(round(cap_btc, 6)) + ' (' + str(round(profit_btc, 2)) + '%)' \
                                          + '\n                   ***USD***: ' + str(round(cap_usd, 2)) + ' (' + str(round(profit_usd, 2)) + '%)'
                             else:
