@@ -26,7 +26,18 @@ if not(os.path.isdir(PWD)):
     logger.error('The directory %s does not exist', PWD)
     exit()
 
-database_name = PWD + 'users_address.db'    # database file name
+NotifyDB = PWD + 'backup/users_notify.db'
+db_worker = SQLighter(NotifyDB)
+
+# If there is no table, then we create it.
+result = db_worker.create_tabl('user_nodes')
+db_worker.close()
+if not result == 'Ok':
+    logger.error(result)
+    exit(1)
+
+
+database_name = PWD + 'backup/users_address.db'    # database file name
 if not(os.path.isfile(database_name)):
     logger.error('The file %s does not exist', database_name)
     exit()
@@ -55,7 +66,7 @@ def read_last_check_time():
 # Data is transferred in the form of a two-dimensional array.
 def get_address():
     db_worker = SQLighter(database_name)
-    AddressFromDB = db_worker.select_all()
+    AddressFromDB = db_worker.select_all('users_address')
     db_worker.close()
     return AddressFromDB
 
@@ -84,7 +95,7 @@ def check_2masternodes(address):
         return ("OOps: Something Error")
 
 # Sending a message if paidAt is newer than the time of the last check (last_time).
-def send_messages(last_time):
+def send_messages(file_last_time, time_now):
     data = get_address() # Data from DB
     count_all = 0
     if not data:
@@ -102,8 +113,10 @@ def send_messages(last_time):
                         'mnp': 'https://explorer.mnpcoin.pro/address/',
                         'bwk': 'https://explorer.bulwarkcrypto.com/#/address/'}
         for row in data:
+            address = row[2]
+            bot_chatID = row[0]
             if not row[1] == 'anon' and not row[1] == 'vivo' and not row[1] == 'smart':
-                parsed_string = check_2masternodes(row[2])
+                parsed_string = check_2masternodes(address)
                 if not ('Error' in parsed_string) and not('not found' in parsed_string):
                     json_string = parsed_string.json()
                     coin = json_string["coin"]
@@ -111,21 +124,38 @@ def send_messages(last_time):
                         paidAt = "None"
                         masternode = b["masternode"]
 
+                        db_worker = SQLighter(NotifyDB)
+                        db_last_time = db_worker.get_last('user_nodes', bot_chatID, coin, address, masternode)
+                        db_worker.close()
+
+                        if db_last_time == []:
+                            last_time = file_last_time
+                            #logger.info('Time from the file %s', str(last_time) + ' ' + coin + ' ' + masternode)
+                        else:
+                            last_time = datetime.datetime.strptime(str(''.join(db_last_time[0])), '%Y-%m-%d %H:%M:%S.%f')
+                            #logger.info('Time from the DB   %s', str(last_time) + ' ' + coin + ' ' + masternode)
+
                         for r in b["royalty"]:
                             paidAt = r["paidAt"]
                             if not (paidAt is None):
                                 paidAt = datetime.datetime.strptime(paidAt, '%Y-%m-%dT%H:%M:%S.%fZ')
                                 if paidAt > last_time:
-                                    link = explorer_url[coin] + str(row[2])
-                                    bot_chatID = row[0]
+                                    link = explorer_url[coin] + str(address)
                                     amount = r["amount"]
                                     text = '`' + masternode + '` send you [' + str(amount) + ' ' + str(coin).upper() + '](' + link +') at ' + str(paidAt) + ' UTC'
-                                    #print(text)
+
                                     keys = {'chat_id': bot_chatID, 'parse_mode': 'Markdown', 'text': text, 'disable_web_page_preview': 'True'}
                                     url = 'https://api.telegram.org/bot' + token + '/sendMessage'
                                     teleg_output = requests.get(url, params=keys)
                                     count_all += 1
                                     logger.info(" count " + str(count_all) + " - " + teleg_output.text)
+
+                                    # Add to DB
+                                    #print(coin, address, masternode, paidAt)
+                                    db_worker = SQLighter(NotifyDB)
+                                    db_worker.add_paidAt('user_nodes', bot_chatID, coin, address, masternode, time_now)
+                                    db_worker.close()
+
 
 # error method
 def error(bot, update, error):
@@ -146,10 +176,10 @@ token = config['Global']['token']
 time_now = datetime.datetime.utcnow() # The current time in the UTC time zone
 logger.info('Script start time  %s', time_now)
 
-last_time = read_last_check_time()  # Last run time read from file.
-logger.info('Time in the file   %s', last_time)
+file_last_time = read_last_check_time()  # Last run time read from file.
+logger.info('Time in the file   %s', file_last_time)
 
-send_messages(last_time)
+send_messages(file_last_time, time_now)
 
 write_last_time(time_now)   # Write start time to file
 logger.info('Script stop time   %s', datetime.datetime.utcnow())

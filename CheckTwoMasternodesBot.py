@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 MAIN_MENU, ADD_COIN, ADD_ADDRESS, DELETE_ADDRESS = range(4)
 
 coin = 'None'
-database_name = 'users_address.db'
+database_name = 'backup/users_address.db'
 
 # set pictures and text for the main menu buttons
 # all available pictures can be viewed here https://www.webfx.com/tools/emoji-cheat-sheet/
@@ -48,7 +48,7 @@ cancel_markup = ReplyKeyboardMarkup(cancel_keyboard, one_time_keyboard=True, res
 db_worker = SQLighter(database_name)
 
 # If there is no table, then we create it.
-db_worker.create_tabl()
+db_worker.create_tabl('users_address')
 db_worker.close()
 
 # command method "/start"
@@ -102,7 +102,7 @@ def main_menu(bot, update):
 # Data is transferred in the form of a two-dimensional array.
 def get_address(chat_id):
     db_worker = SQLighter(database_name)
-    AddressFromDB = db_worker.select_chat_id(chat_id)
+    AddressFromDB = db_worker.select_chat_id('users_address', chat_id)
     db_worker.close()
     return AddressFromDB
 
@@ -158,7 +158,7 @@ def add_addres(bot, update):
 
             # Add to DB
             db_worker = SQLighter(database_name)
-            db_worker.add_address(chat_id, coin, address)
+            db_worker.add_address('users_address', chat_id, coin, address)
             db_worker.close()
             return MAIN_MENU
 
@@ -255,7 +255,7 @@ def delete_address(bot, update):
             address = split_string[2]
             # Delete from DB
             db_worker = SQLighter(database_name)
-            answer = db_worker.delete_row(chat_id, coin, address)
+            answer = db_worker.delete_row('users_address', chat_id, coin, address)
             db_worker.close()
             update.message.reply_text(answer, reply_markup=main_markup)
             return MAIN_MENU
