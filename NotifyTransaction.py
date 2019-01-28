@@ -72,7 +72,7 @@ def get_address():
 
 # function of receiving data from the site api.2masternodes.com/api/address for a given address.
 def check_2masternodes(address):
-    url = 'http://api.2masternodes.com/api/address/'
+    url = 'https://api.2masternodes.com/api/address/'
     try:
         parsed_string = requests.get(url+ address)
         if 'error' in parsed_string.text or 'Invalid' in parsed_string.text or 'invalid' in parsed_string.text or 'Error' in parsed_string.text or 'ot Found' in parsed_string.text:
@@ -111,7 +111,8 @@ def send_messages(file_last_time, time_now):
                         'pivx': 'https://chainz.cryptoid.info/pivx/search.dws?q=',
                         'anon': 'https://explorer.anon.zeltrez.io/address/',
                         'mnp': 'https://explorer.mnpcoin.pro/address/',
-                        'bwk': 'https://explorer.bulwarkcrypto.com/#/address/'}
+                        'bwk': 'https://explorer.bulwarkcrypto.com/#/address/',
+                        'nrg': 'https://explore.energi.network/address/'}
         for row in data:
             address = row[2]
             bot_chatID = row[0]
@@ -143,7 +144,7 @@ def send_messages(file_last_time, time_now):
                                     link = explorer_url[coin] + str(address)
                                     amount = r["amount"]
                                     text = '`' + masternode + '` send you [' + str(amount) + ' ' + str(coin).upper() + '](' + link +') at ' + str(paidAt) + ' UTC'
-
+                                    #print(text)
                                     keys = {'chat_id': bot_chatID, 'parse_mode': 'Markdown', 'text': text, 'disable_web_page_preview': 'True'}
                                     url = 'https://api.telegram.org/bot' + token + '/sendMessage'
                                     teleg_output = requests.get(url, params=keys)

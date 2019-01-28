@@ -38,7 +38,7 @@ reply_keyboard = [[button_status, button_balance, button_addres], [button_add, b
 main_markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
 
 # Create a keyboard of coins.
-coin_keyboard = [['gbx', 'pac', 'dev', 'bwk'], ['bitg', 'pivx', 'xzc', 'mnp'], ['cancel']]
+coin_keyboard = [['gbx', 'pac', 'dev', 'bwk'], ['bitg', 'nrg', 'xzc', 'mnp'], ['cancel']]
 coin_markup = ReplyKeyboardMarkup(coin_keyboard, one_time_keyboard=True, resize_keyboard=True)
 
 # Create a keyboard of cancel.
@@ -125,7 +125,7 @@ def add(bot, update):
 
 # dialog for adding a coin
 def add_coin(bot, update):
-    available_coins = {'xzc', 'gbx', 'pac', 'dev', 'smart', 'bitg', 'vivo', 'pivx', 'bwk', 'mnp'}
+    available_coins = {'xzc', 'gbx', 'pac', 'dev', 'smart', 'bitg', 'vivo', 'pivx', 'bwk', 'mnp', 'nrg'}
     global coin
     coin = update.message.text
     if coin == 'cancel':
@@ -151,6 +151,7 @@ def add_addres(bot, update):
         answer = str(balance(coin, address))
         if 'not found' in answer or not(address.isalnum()):
             string = 'The address ***' + address + '*** can not be found in the explorer for the coin ***' + coin + '***\nEnter the address of the wallet'
+            logger.warning('The address can not be found in the explorer for the coin for chat_id %s', chat_id)
             bot.send_message(chat_id=update.message.chat_id, text=string, parse_mode='MARKDOWN')
             return ADD_ADDRESS
         else:
@@ -162,34 +163,45 @@ def add_addres(bot, update):
             db_worker.close()
             return MAIN_MENU
 
-# function of getting a balance from the coin explorer
-def balance(coin, address):
-    url = {'gbx': 'https://explorer.gobyte.network/ext/getbalance/',
-           'vivo': 'https://chainz.cryptoid.info/vivo/api.dws?q=getbalance&a=',
-           'pac': 'http://explorer.paccoin.io/api/addr/',
-           #'pac': 'http://usa.pacblockexplorer.com:3002/ext/getbalance/',
-           'bitg': 'https://explorer.savebitcoin.io/ext/getbalance/',
-           'dev': 'https://chainz.cryptoid.info/dev/api.dws?q=getbalance&a=',
-           'xzc': 'https://xzc.ccore.online/ext/getbalance/',
-           'smart': 'https://insight.smartcash.cc/api/addr/',
-           'pivx': 'https://chainz.cryptoid.info/pivx/api.dws?q=getbalance&a=',
-           'anon': 'https://explorer.anon.zeltrez.io/api/addr/',
-           'mnp': 'https://explorer.mnpcoin.pro/ext/getbalance/',
-           'bwk': 'https://explorer.bulwarkcrypto.com/ext/getbalance/'}
+def parse_coinexplorer(coin, address):
+    url = {'bitg': 'https://www.coinexplorer.net/api/v1/BITG/address/balance?address='}
     if coin in url:
         try:
             parsed_string = requests.get(url[coin] + address)
-            if 'error' in parsed_string.text or 'Invalid' in parsed_string.text or 'invalid' in parsed_string.text or 'Error' in parsed_string.text or 'Maintenance' in parsed_string.text:
-                logger.warning('Error "%s"', parsed_string.text + url[coin]+ address)
-                string = '***' + address + '*** not found in explorer'
-                return string
-            else:
-                if coin == "smart" or coin == 'anon' or coin == 'pac':
-                    try:
-                        return float(parsed_string.json()["balance"])
-                    except:
-                        logger.warning('Json parse Error on explorer "%s"', url[coin]+ address)
-                        return ("Json parse Error on explorer")
+            try:
+                success = parsed_string.json()["success"]
+                error = parsed_string.json()["error"]
+                if success == True and error == None:
+                    return float(parsed_string.json()["result"][address])
+            except:
+                logger.warning('Json parse Error on explorer "%s"', url[coin]+ address)
+                return ("Json parse Error on explorer")
+        except requests.exceptions.HTTPError:
+            return ("Http Error on explorer")
+        except requests.exceptions.ConnectionError:
+            return ("Error Connecting to explorer")
+        except requests.exceptions.Timeout:
+            return ("Timeout Error on explorer")
+        except requests.exceptions.RequestException:
+            return ("OOps: Something Error")
+
+def parse_text(coin, address):
+    url = {'gbx': 'https://explorer.gobyte.network/ext/getbalance/',
+           'vivo': 'https://chainz.cryptoid.info/vivo/api.dws?q=getbalance&a=',
+           # 'bitg': 'https://explorer.savebitcoin.io/ext/getbalance/',
+           'dev': 'https://chainz.cryptoid.info/dev/api.dws?q=getbalance&a=',
+           'xzc': 'https://xzc.ccore.online/ext/getbalance/',
+           'pivx': 'https://chainz.cryptoid.info/pivx/api.dws?q=getbalance&a=',
+           'mnp': 'https://explorer.mnpcoin.pro/ext/getbalance/',
+           'bwk': 'https://explorer.bulwarkcrypto.com/ext/getbalance/',
+           'nrg': 'https://explore.energi.network/ext/getbalance/'}
+    if coin in url:
+        try:
+                parsed_string = requests.get(url[coin] + address)
+                # print(parsed_string.text)
+                if 'error' in parsed_string.text or 'Invalid' in parsed_string.text or 'invalid' in parsed_string.text or 'Error' in parsed_string.text or 'Maintenance' in parsed_string.text:
+                    string = coin+'***' + address + '*** not found in explorer'
+                    return string
                 else:
                     try:
                         return float(parsed_string.text)
@@ -197,17 +209,47 @@ def balance(coin, address):
                         logger.warning('Text parse Error on explorer "%s"', url[coin]+ address)
                         return ("Text parse Error on explorer")
         except requests.exceptions.HTTPError:
-            logger.warning('Http Error on explorer "%s"', url[coin]+ address)
             return ("Http Error on explorer")
         except requests.exceptions.ConnectionError:
-            logger.warning('Error Connecting to explorer "%s"', url[coin]+ address)
             return ("Error Connecting to explorer")
         except requests.exceptions.Timeout:
-            logger.warning('Timeout Error on explorer "%s"', url[coin]+ address)
             return ("Timeout Error on explorer")
         except requests.exceptions.RequestException:
-            logger.warning('OOps: Something Error "%s"', url[coin]+ address)
             return ("OOps: Something Error")
+
+def parse_json_balance(coin, address):
+    url = {'pac': 'http://explorer.paccoin.io/api/addr/',
+           'smart': 'https://insight.smartcash.cc/api/addr/',
+           'anon': 'https://explorer.anon.zeltrez.io/api/addr/'}
+    if coin in url:
+        try:
+            parsed_string = requests.get(url[coin] + address)
+            if 'error' in parsed_string.text or 'Invalid' in parsed_string.text or 'invalid' in parsed_string.text or 'Error' in parsed_string.text or 'Maintenance' in parsed_string.text:
+                string = '***' + address + '*** not found in explorer'
+                return string
+            else:
+                    try:
+                        return float(parsed_string.json()["balance"])
+                    except:
+                        logger.warning('Json parse Error on explorer "%s"', url[coin]+ address)
+                        return ("Json parse Error on explorer")
+        except requests.exceptions.HTTPError:
+            return ("Http Error on explorer")
+        except requests.exceptions.ConnectionError:
+            return ("Error Connecting to explorer")
+        except requests.exceptions.Timeout:
+            return ("Timeout Error on explorer")
+        except requests.exceptions.RequestException:
+            return ("OOps: Something Error")
+
+# function of getting a balance from the coin explorer
+def balance(coin, address):
+    if coin == 'pac' or coin == 'smart' or coin == 'anon':
+        return parse_json_balance(coin, address)
+    elif coin == 'bitg':
+        return parse_coinexplorer(coin, address)
+    else:
+        return parse_text(coin, address)
 
 # Send balance to chat
 def send_balance(bot, update):
@@ -340,7 +382,7 @@ def historical_coin_price(coin, unixdate):
 
 # function of receiving data from the site api.2masternodes.com/api/address for a given address.
 def check_2masternodes(address):
-    url = 'http://api.2masternodes.com/api/address/'
+    url = 'https://api.2masternodes.com/api/address/'
     try:
         parsed_string = requests.get(url+ address)
         if 'error' in parsed_string.text or 'Invalid' in parsed_string.text or 'invalid' in parsed_string.text or 'Error' in parsed_string.text or 'ot Found' in parsed_string.text:
