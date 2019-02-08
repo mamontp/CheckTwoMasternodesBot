@@ -261,7 +261,7 @@ def send_balance(bot, update):
         for address in data:
             coin_price = get_coin_price(address[1])
             coin_balance = balance(address[1],address[2])
-            if coin_balance != 0 and type(coin_balance) is float and type(coin_price) is dict and coin_price != {}:
+            if coin_balance != 0 and type(coin_balance) is float and type(coin_price) is dict and coin_price != {} and coin_price != {'BTC': '', 'USD': ''}:
                 usd_balance = coin_price["USD"] * coin_balance
                 btc_balance = coin_price["BTC"] * coin_balance
                 string = address[1] + ": " + str(coin_balance) + '\nBTC: ' + str("%.7f" % btc_balance) + '\nUSD: ' + str(round(usd_balance, 2))
@@ -311,13 +311,21 @@ def get_coin_price(coin):
         url = {'anon': 'https://api.coinmarketcap.com/v2/ticker/3343?convert=BTC',
                 'mnp': 'https://api.coinmarketcap.com/v2/ticker/3348?convert=BTC'}
         try:
-                parsed_string = requests.get(url[coin])
-                if not ('error ' in parsed_string.text) and not ('Error' in parsed_string.text) and not ('not found' in parsed_string.text):
+            parsed_string = requests.get(url[coin])
+            if not ('error ' in parsed_string.text) and not ('Error' in parsed_string.text) and not ('not found' in parsed_string.text) and not ('Bad' in parsed_string.text):
+                try:
                     BTC = float(parsed_string.json()["data"]["quotes"]["BTC"]["price"])
-                    USD = float(parsed_string.json()["data"]["quotes"]["USD"]["price"])
-                    return {"BTC": BTC, "USD": USD}
-                else:
+                except:
+                    BTC = ''
                     logger.warning('Error "%s"', parsed_string.text + url)
+                try:
+                    USD = float(parsed_string.json()["data"]["quotes"]["USD"]["price"])
+                except:
+                    USD = ''
+                    logger.warning('Error "%s"', parsed_string.text + url)
+                return {"BTC": BTC, "USD": USD}
+            else:
+                logger.warning('Error "%s"', parsed_string.text + url)
         except requests.exceptions.HTTPError:
                 logger.warning('Http Error on "%s"', url)
                 return ("Http Error on ")
@@ -334,9 +342,17 @@ def get_coin_price(coin):
         url = 'https://min-api.cryptocompare.com/data/price?fsym=' + str(coin).upper() +'&tsyms=BTC,USD&extraParams=CheckTwoMasternodesBot'
         try:
             parsed_string = requests.get(url)
-            if not ('error' in parsed_string.text) and not ('Error' in parsed_string.text):
-                BTC = float(parsed_string.json()["BTC"])
-                USD = float(parsed_string.json()["USD"])
+            if not ('error' in parsed_string.text) and not ('Error' in parsed_string.text) and not ('Bad' in parsed_string.text):
+                try:
+                    BTC = float(parsed_string.json()["BTC"])
+                except:
+                    BTC = ''
+                    logger.warning('Error "%s"', parsed_string.text + url)
+                try:
+                    USD = float(parsed_string.json()["USD"])
+                except:
+                    USD = ''
+                    logger.warning('Error "%s"', parsed_string.text + url)
                 return {"BTC": BTC, "USD": USD}
             else:
                 logger.warning('Error "%s"', parsed_string.text + url)
@@ -361,9 +377,17 @@ def historical_coin_price(coin, unixdate):
     url = 'https://min-api.cryptocompare.com/data/pricehistorical'
     try:
         parsed_string = requests.get(url, params=keys)
-        if not ('error' in parsed_string.text) and not ('Error' in parsed_string.text):
-            BTC = float(parsed_string.json()[COIN]["BTC"])
-            USD = float(parsed_string.json()[COIN]["USD"])
+        if not ('error' in parsed_string.text) and not ('Error' in parsed_string.text) and not ('Bad' in parsed_string.text):
+            try:
+                BTC = float(parsed_string.json()[COIN]["BTC"])
+            except:
+                BTC = ''
+                logger.warning('Error "%s"', parsed_string.text + url)
+            try:
+                USD = float(parsed_string.json()[COIN]["USD"])
+            except:
+                USD = ''
+                logger.warning('Error "%s"', parsed_string.text + url)
             return {"BTC": BTC, "USD": USD}
         else:
             logger.warning('Error "%s"', parsed_string.text + url)
