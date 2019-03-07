@@ -110,12 +110,25 @@ def get_address(chat_id):
 def send_addres(bot, update):
     chat_id = update.message.chat_id
     data = get_address(chat_id) # Data from DB
+    explorer_url = {'gbx': 'https://explorer.gobyte.network/address/',
+                    'vivo': 'https://chainz.cryptoid.info/vivo/search.dws?q=',
+                    'pac': 'http://explorer.paccoin.net/address/', 			# 'http://usa.pacblockexplorer.com:3002/address/',
+                    'bitg': 'https://www.coinexplorer.net/BITG/address/',
+                    'dev': 'https://chainz.cryptoid.info/dev/search.dws?q=',
+                    'xzc': 'https://chainz.cryptoid.info/xzc/search.dws?q=',
+                    'smart': 'http://explorer3.smartcash.cc/address/',
+                    'pivx': 'https://chainz.cryptoid.info/pivx/search.dws?q=',
+                    'anon': 'https://explorer.anon.zeltrez.io/address/',
+                    'mnp': 'https://explorer.mnpcoin.pro/address/',
+                    'bwk': 'https://explorer.bulwarkcrypto.com/#/address/',
+                    'nrg': 'https://explore.energi.network/address/'}
     if not data:
         bot.send_message(chat_id=update.message.chat_id, text='You do not have any addresses. Add address please.', reply_markup=main_markup)
     else:
         for row in data:
-            string = row[1] + " - " + row[2]
-            bot.send_message(chat_id=update.message.chat_id, text=string, reply_markup=main_markup)
+            link = explorer_url[row[1]] + str(row[2])
+            string = row[1] + " - [" + row[2] + "](" + link + ")"
+            bot.send_message(chat_id=update.message.chat_id, text=string, reply_markup=main_markup, parse_mode='MARKDOWN', disable_web_page_preview='true')
     return MAIN_MENU
 
 # Invitation to choose a coin
@@ -255,20 +268,33 @@ def balance(coin, address):
 def send_balance(bot, update):
     chat_id = update.message.chat_id
     data = get_address(chat_id) # Data from DB
+    explorer_url = {'gbx': 'https://explorer.gobyte.network/address/',
+                    'vivo': 'https://chainz.cryptoid.info/vivo/search.dws?q=',
+                    'pac': 'http://explorer.paccoin.net/address/', 			# 'http://usa.pacblockexplorer.com:3002/address/',
+                    'bitg': 'https://www.coinexplorer.net/BITG/address/',
+                    'dev': 'https://chainz.cryptoid.info/dev/search.dws?q=',
+                    'xzc': 'https://chainz.cryptoid.info/xzc/search.dws?q=',
+                    'smart': 'http://explorer3.smartcash.cc/address/',
+                    'pivx': 'https://chainz.cryptoid.info/pivx/search.dws?q=',
+                    'anon': 'https://explorer.anon.zeltrez.io/address/',
+                    'mnp': 'https://explorer.mnpcoin.pro/address/',
+                    'bwk': 'https://explorer.bulwarkcrypto.com/#/address/',
+                    'nrg': 'https://explore.energi.network/address/'}
     if not data:
         bot.send_message(chat_id=update.message.chat_id, text='You do not have any addresses. Add address please.', reply_markup=main_markup)
     else:
         for address in data:
             coin_price = get_coin_price(address[1])
             coin_balance = balance(address[1],address[2])
+            link = explorer_url[address[1]] + str(address[2])
             if coin_balance != 0 and type(coin_balance) is float and type(coin_price) is dict and coin_price != {} and coin_price != {'BTC': '', 'USD': ''}:
                 usd_balance = coin_price["USD"] * coin_balance
                 btc_balance = coin_price["BTC"] * coin_balance
-                string = address[1] + ": " + str(coin_balance) + '\nBTC: ' + str("%.7f" % btc_balance) + '\nUSD: ' + str(round(usd_balance, 2))
-                bot.send_message(chat_id=update.message.chat_id, text=string, parse_mode='MARKDOWN', reply_markup=main_markup)
+                string = address[1] + ': [' + str(coin_balance) + '](' + link + ')\nBTC: ' + str("%.7f" % btc_balance) + '\nUSD: ' + str(round(usd_balance, 2))
+                bot.send_message(chat_id=update.message.chat_id, text=string, parse_mode='MARKDOWN', reply_markup=main_markup, disable_web_page_preview='true')
             else:
-                string = address[1] + ": " + str(coin_balance)
-                bot.send_message(chat_id=update.message.chat_id, text=string, parse_mode='MARKDOWN', reply_markup=main_markup)
+                string = address[1] + ': [' + str(coin_balance) + '](' + link + ')'
+                bot.send_message(chat_id=update.message.chat_id, text=string, parse_mode='MARKDOWN', reply_markup=main_markup, disable_web_page_preview='true')
     return MAIN_MENU
 
 # Invitation to choose a coin

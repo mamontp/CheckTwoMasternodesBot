@@ -101,7 +101,7 @@ def send_messages(file_last_time, time_now):
     if not data:
         logger.warning('You do not have any addresses. Add address please.')
     else:
-        explorer_url = {'gbx': 'https://explorer.gobyte.network:5002/address/',
+        explorer_url = {'gbx': 'https://explorer.gobyte.network/address/',
                         'vivo': 'https://chainz.cryptoid.info/vivo/search.dws?q=',
                         'pac': 'http://explorer.paccoin.net/address/', 			# 'http://usa.pacblockexplorer.com:3002/address/',
                         'bitg': 'https://www.coinexplorer.net/BITG/address/',
