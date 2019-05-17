@@ -106,15 +106,12 @@ def get_address(chat_id):
     db_worker.close()
     return AddressFromDB
 
-# send coin and address for a specific chat_id      coin - address
-def send_addres(bot, update):
-    chat_id = update.message.chat_id
-    data = get_address(chat_id) # Data from DB
+def explorer_link(coin, address):
     explorer_url = {'gbx': 'https://explorer.gobyte.network/address/',
                     'vivo': 'https://chainz.cryptoid.info/vivo/search.dws?q=',
                     'pac': 'http://explorer.paccoin.net/address/', 			# 'http://usa.pacblockexplorer.com:3002/address/',
                     'bitg': 'https://www.coinexplorer.net/BITG/address/',
-                    'dev': 'https://chainz.cryptoid.info/dev/search.dws?q=',
+                    'dev': 'http://explorer.deviantcoin.io/address/',# 'https://chainz.cryptoid.info/dev/search.dws?q=',
                     'xzc': 'https://chainz.cryptoid.info/xzc/search.dws?q=',
                     'smart': 'http://explorer3.smartcash.cc/address/',
                     'pivx': 'https://chainz.cryptoid.info/pivx/search.dws?q=',
@@ -122,12 +119,18 @@ def send_addres(bot, update):
                     'mnp': 'https://explorer.mnpcoin.pro/address/',
                     'bwk': 'https://explorer.bulwarkcrypto.com/#/address/',
                     'nrg': 'https://explore.energi.network/address/'}
+    link = explorer_url[coin] + str(address)
+    return link
+
+# send coin and address for a specific chat_id      coin - address
+def send_addres(bot, update):
+    chat_id = update.message.chat_id
+    data = get_address(chat_id) # Data from DB
     if not data:
         bot.send_message(chat_id=update.message.chat_id, text='You do not have any addresses. Add address please.', reply_markup=main_markup)
     else:
         for row in data:
-            link = explorer_url[row[1]] + str(row[2])
-            string = row[1] + " - [" + row[2] + "](" + link + ")"
+            string = row[1] + " - [" + row[2] + "](" + explorer_link(row[1], row[2]) + ")"
             bot.send_message(chat_id=update.message.chat_id, text=string, reply_markup=main_markup, parse_mode='MARKDOWN', disable_web_page_preview='true')
     return MAIN_MENU
 
@@ -202,7 +205,7 @@ def parse_text(coin, address):
     url = {'gbx': 'https://explorer.gobyte.network/ext/getbalance/',
            'vivo': 'https://chainz.cryptoid.info/vivo/api.dws?q=getbalance&a=',
            # 'bitg': 'https://explorer.savebitcoin.io/ext/getbalance/',
-           'dev': 'https://chainz.cryptoid.info/dev/api.dws?q=getbalance&a=',
+           'dev': 'http://explorer.deviantcoin.io/ext/getbalance/', # 'https://chainz.cryptoid.info/dev/api.dws?q=getbalance&a=',
            'xzc': 'https://xzc.ccore.online/ext/getbalance/',
            'pivx': 'https://chainz.cryptoid.info/pivx/api.dws?q=getbalance&a=',
            'mnp': 'https://explorer.mnpcoin.pro/ext/getbalance/',
@@ -268,32 +271,19 @@ def balance(coin, address):
 def send_balance(bot, update):
     chat_id = update.message.chat_id
     data = get_address(chat_id) # Data from DB
-    explorer_url = {'gbx': 'https://explorer.gobyte.network/address/',
-                    'vivo': 'https://chainz.cryptoid.info/vivo/search.dws?q=',
-                    'pac': 'http://explorer.paccoin.net/address/', 			# 'http://usa.pacblockexplorer.com:3002/address/',
-                    'bitg': 'https://www.coinexplorer.net/BITG/address/',
-                    'dev': 'https://chainz.cryptoid.info/dev/search.dws?q=',
-                    'xzc': 'https://chainz.cryptoid.info/xzc/search.dws?q=',
-                    'smart': 'http://explorer3.smartcash.cc/address/',
-                    'pivx': 'https://chainz.cryptoid.info/pivx/search.dws?q=',
-                    'anon': 'https://explorer.anon.zeltrez.io/address/',
-                    'mnp': 'https://explorer.mnpcoin.pro/address/',
-                    'bwk': 'https://explorer.bulwarkcrypto.com/#/address/',
-                    'nrg': 'https://explore.energi.network/address/'}
     if not data:
         bot.send_message(chat_id=update.message.chat_id, text='You do not have any addresses. Add address please.', reply_markup=main_markup)
     else:
         for address in data:
             coin_price = get_coin_price(address[1])
             coin_balance = balance(address[1],address[2])
-            link = explorer_url[address[1]] + str(address[2])
             if coin_balance != 0 and type(coin_balance) is float and type(coin_price) is dict and coin_price != {} and coin_price != {'BTC': '', 'USD': ''}:
                 usd_balance = coin_price["USD"] * coin_balance
                 btc_balance = coin_price["BTC"] * coin_balance
-                string = address[1] + ': [' + str(coin_balance) + '](' + link + ')\nBTC: ' + str("%.7f" % btc_balance) + '\nUSD: ' + str(round(usd_balance, 2))
+                string = address[1] + ': [' + str(coin_balance) + '](' + explorer_link(address[1], address[2]) + ')\nBTC: ' + str("%.7f" % btc_balance) + '\nUSD: ' + str(round(usd_balance, 2))
                 bot.send_message(chat_id=update.message.chat_id, text=string, parse_mode='MARKDOWN', reply_markup=main_markup, disable_web_page_preview='true')
             else:
-                string = address[1] + ': [' + str(coin_balance) + '](' + link + ')'
+                string = address[1] + ': [' + str(coin_balance) + '](' + explorer_link(address[1], address[2]) + ')'
                 bot.send_message(chat_id=update.message.chat_id, text=string, parse_mode='MARKDOWN', reply_markup=main_markup, disable_web_page_preview='true')
     return MAIN_MENU
 

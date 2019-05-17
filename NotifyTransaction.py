@@ -105,7 +105,7 @@ def send_messages(file_last_time, time_now):
                         'vivo': 'https://chainz.cryptoid.info/vivo/search.dws?q=',
                         'pac': 'http://explorer.paccoin.net/address/', 			# 'http://usa.pacblockexplorer.com:3002/address/',
                         'bitg': 'https://www.coinexplorer.net/BITG/address/',
-                        'dev': 'https://chainz.cryptoid.info/dev/search.dws?q=',
+                        'dev': 'http://explorer.deviantcoin.io/address/',       # 'https://chainz.cryptoid.info/dev/search.dws?q=',
                         'xzc': 'https://chainz.cryptoid.info/xzc/search.dws?q=',
                         'smart': 'http://explorer3.smartcash.cc/address/',
                         'pivx': 'https://chainz.cryptoid.info/pivx/search.dws?q=',
