@@ -111,7 +111,7 @@ def explorer_link(coin, address):
                     'vivo': 'https://chainz.cryptoid.info/vivo/search.dws?q=',
                     'pac': 'http://explorer.paccoin.net/address/', 			# 'http://usa.pacblockexplorer.com:3002/address/',
                     'bitg': 'https://www.coinexplorer.net/BITG/address/',
-                    'dev': 'http://explorer.deviantcoin.io/address/',# 'https://chainz.cryptoid.info/dev/search.dws?q=',
+                    'dev': 'http://explorer.deviantcoin.io/address/',       # 'https://chainz.cryptoid.info/dev/search.dws?q=',
                     'xzc': 'https://chainz.cryptoid.info/xzc/search.dws?q=',
                     'smart': 'http://explorer3.smartcash.cc/address/',
                     'pivx': 'https://chainz.cryptoid.info/pivx/search.dws?q=',
@@ -205,7 +205,7 @@ def parse_text(coin, address):
     url = {'gbx': 'https://explorer.gobyte.network/ext/getbalance/',
            'vivo': 'https://chainz.cryptoid.info/vivo/api.dws?q=getbalance&a=',
            # 'bitg': 'https://explorer.savebitcoin.io/ext/getbalance/',
-           'dev': 'http://explorer.deviantcoin.io/ext/getbalance/', # 'https://chainz.cryptoid.info/dev/api.dws?q=getbalance&a=',
+           'dev': 'http://explorer.deviantcoin.io/ext/getbalance/',    # 'https://chainz.cryptoid.info/dev/api.dws?q=getbalance&a=',
            'xzc': 'https://xzc.ccore.online/ext/getbalance/',
            'pivx': 'https://chainz.cryptoid.info/pivx/api.dws?q=getbalance&a=',
            'mnp': 'https://explorer.mnpcoin.pro/ext/getbalance/',
@@ -275,13 +275,18 @@ def send_balance(bot, update):
         bot.send_message(chat_id=update.message.chat_id, text='You do not have any addresses. Add address please.', reply_markup=main_markup)
     else:
         for address in data:
-            coin_price = get_coin_price(address[1])
+
             coin_balance = balance(address[1],address[2])
-            if coin_balance != 0 and type(coin_balance) is float and type(coin_price) is dict and coin_price != {} and coin_price != {'BTC': '', 'USD': ''}:
-                usd_balance = coin_price["USD"] * coin_balance
-                btc_balance = coin_price["BTC"] * coin_balance
-                string = address[1] + ': [' + str(coin_balance) + '](' + explorer_link(address[1], address[2]) + ')\nBTC: ' + str("%.7f" % btc_balance) + '\nUSD: ' + str(round(usd_balance, 2))
-                bot.send_message(chat_id=update.message.chat_id, text=string, parse_mode='MARKDOWN', reply_markup=main_markup, disable_web_page_preview='true')
+            if coin_balance != 0 and type(coin_balance) is float: # and type(coin_price) is dict and coin_price != {} and coin_price != {'BTC': '', 'USD': ''}:
+                coin_price = get_coin_price(address[1])
+                if type(coin_price) is dict and coin_price != {} and coin_price != {'BTC': '', 'USD': ''}:
+                    usd_balance = coin_price["USD"] * coin_balance
+                    btc_balance = coin_price["BTC"] * coin_balance
+                    string = address[1] + ': [' + str(coin_balance) + '](' + explorer_link(address[1], address[2]) + ')\nBTC: ' + str("%.7f" % btc_balance) + '\nUSD: ' + str(round(usd_balance, 2))
+                    bot.send_message(chat_id=update.message.chat_id, text=string, parse_mode='MARKDOWN', reply_markup=main_markup, disable_web_page_preview='true')
+                else:
+                    string = address[1] + ': [' + str(coin_balance) + '](' + explorer_link(address[1], address[2]) + ')'
+                    bot.send_message(chat_id=update.message.chat_id, text=string, parse_mode='MARKDOWN', reply_markup=main_markup, disable_web_page_preview='true')
             else:
                 string = address[1] + ': [' + str(coin_balance) + '](' + explorer_link(address[1], address[2]) + ')'
                 bot.send_message(chat_id=update.message.chat_id, text=string, parse_mode='MARKDOWN', reply_markup=main_markup, disable_web_page_preview='true')
@@ -323,67 +328,46 @@ def delete_address(bot, update):
 
 # The function of finding the current value of a coin.
 def get_coin_price(coin):
-    if coin == 'anon' or coin == 'mnp':
-        url = {'anon': 'https://api.coinmarketcap.com/v2/ticker/3343?convert=BTC',
-                'mnp': 'https://api.coinmarketcap.com/v2/ticker/3348?convert=BTC'}
+    ID = {'mnp': '3348',
+          'bwk': '2260',
+          'pac': '1107',
+          'bitg': '2604',
+          'dev': '2649',
+          'xzc': '1414',
+          'nrg': '3218',
+          'vivo': '1956',
+          'gbx': '2200'}
+
+    price_dict = {}
+
+    url = 'https://pro-api.coinmarketcap.com/v1/tools/price-conversion'
+    headers = {'Accepts': 'application/json', 'X-CMC_PRO_API_KEY': CMC_PRO_API_KEY,}
+    session = requests.Session()
+    session.headers.update(headers)
+
+    for currency_convert in ['USD', 'BTC']:
+        parameters = {'id':ID[coin], 'amount':'1', 'convert': currency_convert}
         try:
-            parsed_string = requests.get(url[coin])
-            if not ('error ' in parsed_string.text) and not ('Error' in parsed_string.text) and not ('not found' in parsed_string.text) and not ('Bad' in parsed_string.text):
-                try:
-                    BTC = float(parsed_string.json()["data"]["quotes"]["BTC"]["price"])
-                except:
-                    BTC = ''
-                    logger.warning('Error "%s"', parsed_string.text + url)
-                try:
-                    USD = float(parsed_string.json()["data"]["quotes"]["USD"]["price"])
-                except:
-                    USD = ''
-                    logger.warning('Error "%s"', parsed_string.text + url)
-                return {"BTC": BTC, "USD": USD}
-            else:
+            parsed_string = session.get(url, params=parameters)
+            try:
+                price_dict[currency_convert] = float(parsed_string.json()["data"]["quote"][currency_convert]["price"])
+            except:
+                price_dict[currency_convert] = ''
                 logger.warning('Error "%s"', parsed_string.text + url)
         except requests.exceptions.HTTPError:
-                logger.warning('Http Error on "%s"', url)
-                return ("Http Error on ")
+            logger.warning('Http Error on "%s"', url)
+            return ("Http Error on ")
         except requests.exceptions.ConnectionError:
-                logger.warning('Error Connecting to  "%s"', url)
-                return ("Error Connecting to ")
+            logger.warning('Error Connecting to  "%s"', url)
+            return ("Error Connecting to ")
         except requests.exceptions.Timeout:
-                logger.warning('Timeout Error on "%s"', url)
-                return ("Timeout Error on explorer")
+            logger.warning('Timeout Error on "%s"', url)
+            return ("Timeout Error on explorer")
         except requests.exceptions.RequestException:
-                logger.warning('OOps: Something Error "%s"', url)
-                return ("OOps: Something Error")
-    else:
-        url = 'https://min-api.cryptocompare.com/data/price?fsym=' + str(coin).upper() +'&tsyms=BTC,USD&extraParams=CheckTwoMasternodesBot'
-        try:
-            parsed_string = requests.get(url)
-            if not ('error' in parsed_string.text) and not ('Error' in parsed_string.text) and not ('Bad' in parsed_string.text):
-                try:
-                    BTC = float(parsed_string.json()["BTC"])
-                except:
-                    BTC = ''
-                    logger.warning('Error "%s"', parsed_string.text + url)
-                try:
-                    USD = float(parsed_string.json()["USD"])
-                except:
-                    USD = ''
-                    logger.warning('Error "%s"', parsed_string.text + url)
-                return {"BTC": BTC, "USD": USD}
-            else:
-                logger.warning('Error "%s"', parsed_string.text + url)
-        except requests.exceptions.HTTPError:
-                logger.warning('Http Error on "%s"', url)
-                return ("Http Error on ")
-        except requests.exceptions.ConnectionError:
-                logger.warning('Error Connecting to  "%s"', url)
-                return ("Error Connecting to ")
-        except requests.exceptions.Timeout:
-                logger.warning('Timeout Error on "%s"', url)
-                return ("Timeout Error on explorer")
-        except requests.exceptions.RequestException:
-                logger.warning('OOps: Something Error "%s"', url)
-                return ("OOps: Something Error")
+            logger.warning('OOps: Something Error "%s"', url)
+            return ("OOps: Something Error")
+
+    return price_dict
 
 # The function of finding the historical value of a coin.
 def historical_coin_price(coin, unixdate):
@@ -621,6 +605,7 @@ token = config['Global']['token']
 listen = config['Global']['listen']
 port = int(config['Global']['port'])
 webhook_url = config['Global']['webhook_url']
+CMC_PRO_API_KEY = config['Global']['CMC_PRO_API_KEY']
 
 #with open(r"test_token.txt", "r") as file:
 #        token = [row.strip() for row in file]
